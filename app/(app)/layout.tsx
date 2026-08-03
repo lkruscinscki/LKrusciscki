@@ -19,7 +19,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
+      <header className="flex items-center justify-between border-b-2 border-accent/30 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <span className="text-sm text-zinc-500 dark:text-zinc-400">
           {user.email}
         </span>
@@ -30,7 +30,7 @@ export default async function AppLayout({
         </form>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-20">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-28">{children}</main>
 
       <NavBar />
     </div>

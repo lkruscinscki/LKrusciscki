@@ -12,7 +12,7 @@ export async function addTodo(formData: FormData) {
 
   await supabase.from("todos").insert({ text, for_date });
 
-  revalidatePath("/manana");
+  revalidatePath("/tareas");
 }
 
 export async function toggleTodo(formData: FormData) {
@@ -28,7 +28,7 @@ export async function toggleTodo(formData: FormData) {
     })
     .eq("id", id);
 
-  revalidatePath("/manana");
+  revalidatePath("/tareas");
 }
 
 export async function deleteTodo(formData: FormData) {
@@ -37,5 +37,5 @@ export async function deleteTodo(formData: FormData) {
 
   await supabase.from("todos").delete().eq("id", id);
 
-  revalidatePath("/manana");
+  revalidatePath("/tareas");
 }

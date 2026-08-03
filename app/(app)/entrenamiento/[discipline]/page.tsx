@@ -1,8 +1,26 @@
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate } from "@/lib/game-day";
-import { addCrossTraining } from "./actions";
+import { addCrossTrainingSession } from "./actions";
 
-export default async function CrossTrainingPage() {
+const DISCIPLINES: Record<string, string> = {
+  gym: "Gym",
+  escalada: "Escalada",
+  running: "Running",
+};
+
+export default async function DisciplinePage({
+  params,
+}: {
+  params: Promise<{ discipline: string }>;
+}) {
+  const { discipline: slug } = await params;
+  const label = DISCIPLINES[slug];
+
+  if (!label) {
+    notFound();
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,23 +30,17 @@ export default async function CrossTrainingPage() {
   const { data: recentSessions } = await supabase
     .from("cross_training_sessions")
     .select("*")
+    .eq("discipline", label)
     .order("date", { ascending: false })
-    .limit(5);
+    .limit(10);
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <h1 className="text-2xl font-semibold">Cross-training</h1>
+      <h1 className="text-2xl font-semibold">{label}</h1>
 
-      <form action={addCrossTraining} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          Disciplina
-          <input
-            name="discipline"
-            placeholder="Gym, running, escalada..."
-            required
-            className="rounded border border-black/20 px-3 py-2 dark:border-white/20"
-          />
-        </label>
+      <form action={addCrossTrainingSession} className="flex flex-col gap-3">
+        <input type="hidden" name="discipline" value={label} />
+        <input type="hidden" name="slug" value={slug} />
 
         <label className="flex flex-col gap-1 text-sm">
           Fecha
@@ -37,7 +49,7 @@ export default async function CrossTrainingPage() {
             name="date"
             defaultValue={today}
             required
-            className="rounded border border-black/20 px-3 py-2 dark:border-white/20"
+            className="input"
           />
         </label>
 
@@ -48,23 +60,16 @@ export default async function CrossTrainingPage() {
             name="duration_minutes"
             min={1}
             required
-            className="rounded border border-black/20 px-3 py-2 dark:border-white/20"
+            className="input"
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           Nota
-          <input
-            name="notes"
-            placeholder="Opcional"
-            className="rounded border border-black/20 px-3 py-2 dark:border-white/20"
-          />
+          <input name="notes" placeholder="Opcional" className="input" />
         </label>
 
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
-        >
+        <button type="submit" className="btn-primary">
           Guardar sesión
         </button>
       </form>
@@ -76,18 +81,16 @@ export default async function CrossTrainingPage() {
           </h2>
           <ul className="flex flex-col gap-2">
             {recentSessions.map((s) => (
-              <li
-                key={s.id}
-                className="rounded border border-black/10 p-3 text-sm dark:border-white/10"
-              >
+              <li key={s.id} className="card text-sm">
                 <div className="flex justify-between">
-                  <span>
-                    {s.date} · {s.discipline}
-                  </span>
+                  <span>{s.date}</span>
                   <span className="text-zinc-500 dark:text-zinc-400">
                     {s.duration_minutes} min
                   </span>
                 </div>
+                {s.notes && (
+                  <p className="text-zinc-500 dark:text-zinc-400">{s.notes}</p>
+                )}
               </li>
             ))}
           </ul>

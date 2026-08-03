@@ -13,7 +13,7 @@ import {
 // TODO(fase 4): mover a lib/game-config.ts junto con el resto de objetivos.
 const WEEKLY_CREATIVE_GOAL_MINUTES = 120;
 
-export default async function HoyPage() {
+export default async function HabitosPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,13 +62,13 @@ export default async function HoyPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <h1 className="text-2xl font-semibold">Hoy</h1>
+      <h1 className="text-2xl font-semibold">Hábitos</h1>
 
-      <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+      <section className="card">
         <h2 className="mb-2 font-medium">Meditación</h2>
         {meditation ? (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-green-700 dark:text-green-400">
+            <p className="text-sm text-accent">
               ✓ Hecho hoy
               {meditation.duration_minutes
                 ? ` · ${meditation.duration_minutes} min`
@@ -87,25 +87,20 @@ export default async function HoyPage() {
               name="duration_minutes"
               placeholder="min (opcional)"
               min={1}
-              className="w-28 rounded border border-black/20 px-2 py-2 text-sm dark:border-white/20"
+              className="input w-28"
             />
-            <button
-              type="submit"
-              className="flex-1 rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
-            >
+            <button type="submit" className="btn-primary flex-1">
               Medité hoy
             </button>
           </form>
         )}
       </section>
 
-      <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+      <section className="card">
         <h2 className="mb-2 font-medium">Journaling</h2>
         {journal ? (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-green-700 dark:text-green-400">
-              ✓ Hecho hoy
-            </p>
+            <p className="text-sm text-accent">✓ Hecho hoy</p>
             <form action={undoJournaling}>
               <button type="submit" className="text-sm text-zinc-400 underline">
                 deshacer
@@ -114,17 +109,14 @@ export default async function HoyPage() {
           </div>
         ) : (
           <form action={logJournaling}>
-            <button
-              type="submit"
-              className="w-full rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
-            >
+            <button type="submit" className="btn-primary w-full">
               Escribí hoy
             </button>
           </form>
         )}
       </section>
 
-      <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+      <section className="card">
         <h2 className="mb-2 font-medium">Lectura</h2>
 
         {booksReading && booksReading.length > 0 ? (
@@ -162,7 +154,7 @@ export default async function HoyPage() {
               name="book_id"
               defaultValue={todayReadingLog?.book_id ?? ""}
               required
-              className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              className="input"
             >
               <option value="" disabled>
                 Elegí un libro
@@ -181,12 +173,9 @@ export default async function HoyPage() {
                 placeholder="Páginas leídas hoy"
                 min={1}
                 required
-                className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                className="input flex-1"
               />
-              <button
-                type="submit"
-                className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-              >
+              <button type="submit" className="btn-primary">
                 {todayReadingLog ? "Actualizar" : "Guardar"}
               </button>
             </div>
@@ -201,7 +190,7 @@ export default async function HoyPage() {
             name="title"
             placeholder="Nuevo libro (ej. El Principito)"
             required
-            className="flex-1 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+            className="input flex-1"
           />
           <input
             type="number"
@@ -209,18 +198,15 @@ export default async function HoyPage() {
             placeholder="Páginas"
             min={1}
             required
-            className="w-24 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+            className="input w-24"
           />
-          <button
-            type="submit"
-            className="rounded border border-black/20 px-3 py-2 dark:border-white/20"
-          >
+          <button type="submit" className="btn-secondary">
             +
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+      <section className="card">
         <h2 className="mb-2 font-medium">
           Bloque creativo · {creativeMinutes}/{WEEKLY_CREATIVE_GOAL_MINUTES}{" "}
           min esta semana
@@ -230,7 +216,7 @@ export default async function HoyPage() {
             name="activity"
             placeholder="Actividad (ej. guitarra)"
             required
-            className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+            className="input flex-1"
           />
           <input
             type="number"
@@ -238,12 +224,9 @@ export default async function HoyPage() {
             placeholder="Minutos"
             min={1}
             required
-            className="w-24 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+            className="input w-24"
           />
-          <button
-            type="submit"
-            className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-          >
+          <button type="submit" className="btn-primary">
             Registrar
           </button>
         </form>

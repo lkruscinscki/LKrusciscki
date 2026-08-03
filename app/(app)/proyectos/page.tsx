@@ -28,10 +28,7 @@ export default async function ProyectosPage() {
         {projects && projects.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {projects.map((p) => (
-              <li
-                key={p.id}
-                className="rounded border border-black/10 p-3 dark:border-white/10"
-              >
+              <li key={p.id} className="card">
                 <span className="font-medium">{p.name}</span>
                 {p.description && (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -46,7 +43,7 @@ export default async function ProyectosPage() {
                   <select
                     name="status"
                     defaultValue={p.status}
-                    className="rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
+                    className="input w-auto py-1 text-sm"
                   >
                     <option value="active">Activo</option>
                     <option value="paused">Pausado</option>
@@ -69,21 +66,9 @@ export default async function ProyectosPage() {
           action={addProject}
           className="flex flex-col gap-2 border-t border-black/10 pt-3 dark:border-white/10"
         >
-          <input
-            name="name"
-            placeholder="Nombre del proyecto"
-            required
-            className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-          />
-          <input
-            name="description"
-            placeholder="Descripción (opcional)"
-            className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-          />
-          <button
-            type="submit"
-            className="self-end rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-          >
+          <input name="name" placeholder="Nombre del proyecto" required className="input" />
+          <input name="description" placeholder="Descripción (opcional)" className="input" />
+          <button type="submit" className="btn-primary self-end">
             Crear proyecto
           </button>
         </form>
@@ -97,7 +82,7 @@ export default async function ProyectosPage() {
               name="project_id"
               required
               defaultValue=""
-              className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              className="input"
             >
               <option value="" disabled>
                 Elegí un proyecto
@@ -113,14 +98,14 @@ export default async function ProyectosPage() {
               name="date"
               defaultValue={today}
               required
-              className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              className="input"
             />
             <textarea
               name="notes"
               placeholder="¿Qué avanzaste?"
               required
               rows={3}
-              className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              className="input"
             />
             <input
               type="number"
@@ -128,12 +113,9 @@ export default async function ProyectosPage() {
               placeholder="Horas (opcional)"
               min={0}
               step={0.5}
-              className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              className="input"
             />
-            <button
-              type="submit"
-              className="self-end rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-            >
+            <button type="submit" className="btn-primary self-end">
               Guardar entrada
             </button>
           </form>

@@ -5,7 +5,7 @@ import { addTodo, toggleTodo, deleteTodo } from "./actions";
 
 type Todo = Database["public"]["Tables"]["todos"]["Row"];
 
-export default async function MananaPage() {
+export default async function TareasPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,6 +29,7 @@ export default async function MananaPage() {
 
   return (
     <div className="flex flex-col gap-8 p-4">
+      <h1 className="text-2xl font-semibold">Tareas</h1>
       <TodoSection title="Hoy" date={today} todos={todayTodos ?? []} />
       <TodoSection title="Mañana" date={tomorrow} todos={tomorrowTodos ?? []} />
     </div>
@@ -60,7 +61,11 @@ function TodoSection({
               />
               <button
                 type="submit"
-                className="h-6 w-6 rounded-full border border-black/30 text-sm dark:border-white/30"
+                className={`flex h-6 w-6 items-center justify-center rounded-full border text-sm ${
+                  todo.completed
+                    ? "border-accent bg-accent text-white"
+                    : "border-black/30 dark:border-white/30"
+                }`}
               >
                 {todo.completed ? "✓" : ""}
               </button>
@@ -92,16 +97,8 @@ function TodoSection({
 
       <form action={addTodo} className="flex gap-2">
         <input type="hidden" name="for_date" value={date} />
-        <input
-          name="text"
-          required
-          placeholder="Nueva tarea"
-          className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-        />
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-        >
+        <input name="text" required placeholder="Nueva tarea" className="input" />
+        <button type="submit" className="btn-primary">
           Agregar
         </button>
       </form>

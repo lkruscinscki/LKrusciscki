@@ -19,10 +19,11 @@ export async function addCompetition(formData: FormData) {
     .select("id")
     .single();
 
-  revalidatePath("/registrar/competencias");
+  revalidatePath("/entrenamiento/jiujitsu");
+  revalidatePath("/entrenamiento/jiujitsu/competencias");
 
   if (data) {
-    redirect(`/registrar/competencias/${data.id}`);
+    redirect(`/entrenamiento/jiujitsu/competencias/${data.id}`);
   }
 }
 
@@ -50,5 +51,5 @@ export async function addMatch(formData: FormData) {
     notes,
   });
 
-  revalidatePath(`/registrar/competencias/${competition_id}`);
+  revalidatePath(`/entrenamiento/jiujitsu/competencias/${competition_id}`);
 }

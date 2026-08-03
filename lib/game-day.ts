@@ -39,6 +39,14 @@ export function addDays(isoDate: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function daysBetween(fromIso: string, toIso: string): number {
+  const [fy, fm, fd] = fromIso.split("-").map(Number);
+  const [ty, tm, td] = toIso.split("-").map(Number);
+  const from = Date.UTC(fy, fm - 1, fd);
+  const to = Date.UTC(ty, tm - 1, td);
+  return Math.round((to - from) / (1000 * 60 * 60 * 24));
+}
+
 // Monday of the week containing isoDate (missions run Monday-Sunday).
 export function getWeekStart(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
