@@ -129,3 +129,82 @@ export async function saveCreativeBlock(formData: FormData) {
 
   revalidatePath("/");
 }
+
+export async function logChess() {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+
+  await supabase
+    .from("chess_sessions")
+    .upsert({ game_date: gameDate }, { onConflict: "user_id,game_date" });
+
+  revalidatePath("/");
+}
+
+export async function undoChess() {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+
+  await supabase.from("chess_sessions").delete().eq("game_date", gameDate);
+
+  revalidatePath("/");
+}
+
+export async function incrementWater() {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+
+  const { data: existing } = await supabase
+    .from("water_intake_logs")
+    .select("bottles_count")
+    .eq("game_date", gameDate)
+    .maybeSingle();
+
+  const bottles_count = (existing?.bottles_count ?? 0) + 1;
+
+  await supabase
+    .from("water_intake_logs")
+    .upsert(
+      { game_date: gameDate, bottles_count },
+      { onConflict: "user_id,game_date" },
+    );
+
+  revalidatePath("/");
+}
+
+export async function decrementWater() {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+
+  const { data: existing } = await supabase
+    .from("water_intake_logs")
+    .select("bottles_count")
+    .eq("game_date", gameDate)
+    .maybeSingle();
+
+  const bottles_count = Math.max(0, (existing?.bottles_count ?? 0) - 1);
+
+  await supabase
+    .from("water_intake_logs")
+    .upsert(
+      { game_date: gameDate, bottles_count },
+      { onConflict: "user_id,game_date" },
+    );
+
+  revalidatePath("/");
+}
+
+export async function saveSleep(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+  const hoursRaw = formData.get("hours");
+  const hours = hoursRaw ? Number(hoursRaw) : null;
+
+  if (hours === null || hours < 0) return;
+
+  await supabase
+    .from("sleep_logs")
+    .upsert({ game_date: gameDate, hours }, { onConflict: "user_id,game_date" });
+
+  revalidatePath("/");
+}

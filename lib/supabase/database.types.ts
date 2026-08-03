@@ -69,6 +69,27 @@ export type Database = {
         }
         Relationships: []
       }
+      chess_sessions: {
+        Row: {
+          created_at: string
+          game_date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_date: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coin_transactions: {
         Row: {
           amount: number
@@ -595,6 +616,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sleep_logs: {
+        Row: {
+          created_at: string
+          game_date: string
+          hours: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_date: string
+          hours: number
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          hours?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       streaks: {
         Row: {
           current_count: number
@@ -758,6 +803,30 @@ export type Database = {
         Update: {
           created_at?: string
           day_cutoff_hour?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      water_intake_logs: {
+        Row: {
+          bottles_count: number
+          created_at: string
+          game_date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          bottles_count?: number
+          created_at?: string
+          game_date: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          bottles_count?: number
+          created_at?: string
+          game_date?: string
+          id?: string
           user_id?: string
         }
         Relationships: []

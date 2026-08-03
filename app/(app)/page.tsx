@@ -8,6 +8,11 @@ import {
   addBook,
   saveReadingLog,
   saveCreativeBlock,
+  logChess,
+  undoChess,
+  incrementWater,
+  decrementWater,
+  saveSleep,
 } from "./actions";
 
 // TODO(fase 4): mover a lib/game-config.ts junto con el resto de objetivos.
@@ -28,6 +33,10 @@ export default async function HabitosPage() {
     { data: booksReading },
     { data: todayReadingLog },
     { data: creativeBlocksThisWeek },
+    { data: chessToday },
+    { data: chessThisWeek },
+    { data: waterToday },
+    { data: sleepToday },
   ] = await Promise.all([
     supabase
       .from("meditation_logs")
@@ -53,6 +62,25 @@ export default async function HabitosPage() {
       .from("creative_blocks")
       .select("duration_minutes")
       .gte("date", weekStart),
+    supabase
+      .from("chess_sessions")
+      .select("*")
+      .eq("game_date", today)
+      .maybeSingle(),
+    supabase
+      .from("chess_sessions")
+      .select("game_date")
+      .gte("game_date", weekStart),
+    supabase
+      .from("water_intake_logs")
+      .select("*")
+      .eq("game_date", today)
+      .maybeSingle(),
+    supabase
+      .from("sleep_logs")
+      .select("*")
+      .eq("game_date", today)
+      .maybeSingle(),
   ]);
 
   const creativeMinutes = (creativeBlocksThisWeek ?? []).reduce(
@@ -230,6 +258,82 @@ export default async function HabitosPage() {
             Registrar
           </button>
         </form>
+      </section>
+
+      <section className="card">
+        <h2 className="mb-2 font-medium">
+          Ajedrez · {chessThisWeek?.length ?? 0} esta semana
+        </h2>
+        {chessToday ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-accent">✓ Jugado hoy</p>
+            <form action={undoChess}>
+              <button type="submit" className="text-sm text-zinc-400 underline">
+                deshacer
+              </button>
+            </form>
+          </div>
+        ) : (
+          <form action={logChess}>
+            <button type="submit" className="btn-primary w-full">
+              Jugué ajedrez hoy
+            </button>
+          </form>
+        )}
+      </section>
+
+      <section className="card">
+        <h2 className="mb-2 font-medium">Agua</h2>
+        <div className="flex items-center justify-between gap-3">
+          <form action={decrementWater}>
+            <button
+              type="submit"
+              className="btn-secondary h-11 w-11 !p-0 text-lg"
+            >
+              −
+            </button>
+          </form>
+          <div className="text-center">
+            <span className="text-2xl font-semibold">
+              {waterToday?.bottles_count ?? 0}
+            </span>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              botellas (750ml) ·{" "}
+              {(((waterToday?.bottles_count ?? 0) * 750) / 1000).toFixed(2)} L
+            </p>
+          </div>
+          <form action={incrementWater}>
+            <button
+              type="submit"
+              className="btn-primary h-11 w-11 !p-0 text-lg"
+            >
+              +
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2 className="mb-2 font-medium">Sueño</h2>
+        <form action={saveSleep} className="flex gap-2">
+          <input
+            type="number"
+            name="hours"
+            step={0.5}
+            min={0}
+            max={24}
+            defaultValue={sleepToday?.hours ?? ""}
+            placeholder="Horas dormidas"
+            required
+            className="input flex-1"
+          />
+          <button type="submit" className="btn-primary">
+            {sleepToday ? "Actualizar" : "Guardar"}
+          </button>
+        </form>
+        <p className="mt-2 text-xs text-zinc-400">
+          Carga manual por ahora — más adelante lo conectamos con tu wearable.
+        </p>
       </section>
     </div>
   );

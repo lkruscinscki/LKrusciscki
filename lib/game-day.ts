@@ -47,6 +47,18 @@ export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((to - from) / (1000 * 60 * 60 * 24));
 }
 
+// Consecutive days ending today (or yesterday, if today isn't logged yet
+// so the streak doesn't look broken before the day is even over).
+export function computeStreak(days: Set<string>, today: string): number {
+  let cursor = days.has(today) ? today : addDays(today, -1);
+  let count = 0;
+  while (days.has(cursor)) {
+    count++;
+    cursor = addDays(cursor, -1);
+  }
+  return count;
+}
+
 // Monday of the week containing isoDate (missions run Monday-Sunday).
 export function getWeekStart(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);

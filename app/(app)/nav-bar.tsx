@@ -13,6 +13,7 @@ const SPORTS = [
 
 const TABS = [
   { href: "/", icon: "✅", label: "Hábitos" },
+  { href: "/inicio", icon: "🏠", label: "Inicio" },
   { href: "/proyectos", icon: "💼", label: "Proyectos" },
   { href: "/tareas", icon: "📝", label: "Tareas" },
 ];
