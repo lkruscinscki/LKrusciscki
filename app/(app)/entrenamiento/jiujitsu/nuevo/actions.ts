@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getTodayGameDate } from "@/lib/game-day";
 
 export async function addJiujitsuSession(formData: FormData) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
 
-  const date = formData.get("date") as string;
-  const type = formData.get("type") as string;
+  const date = await getTodayGameDate(supabase, user.id);
   const duration_minutes = Number(formData.get("duration_minutes"));
   const sparring_rounds = Number(formData.get("sparring_rounds") || 0);
   const submissions_achieved = Number(
@@ -20,11 +24,11 @@ export async function addJiujitsuSession(formData: FormData) {
     ((formData.get("new_techniques") as string) ?? "").trim() || null;
   const notes = ((formData.get("notes") as string) ?? "").trim() || null;
 
-  if (!date || !type || !duration_minutes) return;
+  if (!duration_minutes) return;
 
   await supabase.from("jiujitsu_sessions").insert({
     date,
-    type: type as "gi" | "no_gi" | "open_mat",
+    type: "no_gi",
     duration_minutes,
     sparring_rounds,
     submissions_achieved,
@@ -33,5 +37,6 @@ export async function addJiujitsuSession(formData: FormData) {
     notes,
   });
 
-  revalidatePath("/registrar/jiujitsu");
+  revalidatePath("/entrenamiento/jiujitsu/nuevo");
+  revalidatePath("/entrenamiento/jiujitsu/estadisticas");
 }

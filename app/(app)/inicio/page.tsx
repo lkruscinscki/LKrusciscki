@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, addDays, computeStreak } from "@/lib/game-day";
 import { getMonthGrid, getMonthLabel, getMonthRange } from "@/lib/calendar";
+import { StatTile } from "../stat-tile";
 
 const STREAK_LOOKBACK_DAYS = 60;
 const WEEKDAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
@@ -192,15 +193,6 @@ export default async function InicioPage() {
           )}
         </div>
       </section>
-    </div>
-  );
-}
-
-function StatTile({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg bg-black/5 p-3 dark:bg-white/5">
-      <p className="text-xl font-semibold">{value}</p>
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
     </div>
   );
 }
