@@ -3,10 +3,15 @@ import { getTodayGameDate, getWeekStart } from "@/lib/game-day";
 import {
   logMeditation,
   undoMeditation,
-  saveJournalEntry,
+  logJournaling,
+  undoJournaling,
+  addBook,
   saveReadingLog,
   saveCreativeBlock,
 } from "./actions";
+
+// TODO(fase 4): mover a lib/game-config.ts junto con el resto de objetivos.
+const WEEKLY_CREATIVE_GOAL_MINUTES = 120;
 
 export default async function HoyPage() {
   const supabase = await createClient();
@@ -20,7 +25,8 @@ export default async function HoyPage() {
   const [
     { data: meditation },
     { data: journal },
-    { data: reading },
+    { data: booksReading },
+    { data: todayReadingLog },
     { data: creativeBlocksThisWeek },
   ] = await Promise.all([
     supabase
@@ -34,14 +40,25 @@ export default async function HoyPage() {
       .eq("game_date", today)
       .maybeSingle(),
     supabase
+      .from("books")
+      .select("*, reading_logs(pages_read)")
+      .eq("status", "reading")
+      .order("created_at"),
+    supabase
       .from("reading_logs")
-      .select("*, books(title)")
+      .select("*")
       .eq("game_date", today)
       .maybeSingle(),
-    supabase.from("creative_blocks").select("id").gte("date", weekStart),
+    supabase
+      .from("creative_blocks")
+      .select("duration_minutes")
+      .gte("date", weekStart),
   ]);
 
-  const creativeCount = creativeBlocksThisWeek?.length ?? 0;
+  const creativeMinutes = (creativeBlocksThisWeek ?? []).reduce(
+    (sum, block) => sum + block.duration_minutes,
+    0,
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4">
@@ -84,84 +101,150 @@ export default async function HoyPage() {
 
       <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
         <h2 className="mb-2 font-medium">Journaling</h2>
-        <form action={saveJournalEntry} className="flex flex-col gap-2">
-          <textarea
-            name="content"
-            defaultValue={journal?.content ?? ""}
-            placeholder="Escribí tu entrada de hoy..."
-            rows={4}
-            className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+        {journal ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-green-700 dark:text-green-400">
+              ✓ Hecho hoy
+            </p>
+            <form action={undoJournaling}>
+              <button type="submit" className="text-sm text-zinc-400 underline">
+                deshacer
+              </button>
+            </form>
+          </div>
+        ) : (
+          <form action={logJournaling}>
+            <button
+              type="submit"
+              className="w-full rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
+            >
+              Escribí hoy
+            </button>
+          </form>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <h2 className="mb-2 font-medium">Lectura</h2>
+
+        {booksReading && booksReading.length > 0 ? (
+          <ul className="mb-3 flex flex-col gap-1">
+            {booksReading.map((book) => {
+              const pagesRead = book.reading_logs.reduce(
+                (sum, log) => sum + log.pages_read,
+                0,
+              );
+              return (
+                <li
+                  key={book.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span>{book.title}</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {pagesRead}/{book.total_pages} pág.
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mb-3 text-sm text-zinc-400">
+            Todavía no agregaste ningún libro.
+          </p>
+        )}
+
+        {booksReading && booksReading.length > 0 && (
+          <form
+            action={saveReadingLog}
+            className="mb-4 flex flex-col gap-2 border-t border-black/10 pt-3 dark:border-white/10"
+          >
+            <select
+              name="book_id"
+              defaultValue={todayReadingLog?.book_id ?? ""}
+              required
+              className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+            >
+              <option value="" disabled>
+                Elegí un libro
+              </option>
+              {booksReading.map((book) => (
+                <option key={book.id} value={book.id}>
+                  {book.title}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                name="pages_read"
+                defaultValue={todayReadingLog?.pages_read ?? ""}
+                placeholder="Páginas leídas hoy"
+                min={1}
+                required
+                className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              />
+              <button
+                type="submit"
+                className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+              >
+                {todayReadingLog ? "Actualizar" : "Guardar"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <form
+          action={addBook}
+          className="flex gap-2 border-t border-black/10 pt-3 text-sm dark:border-white/10"
+        >
+          <input
+            name="title"
+            placeholder="Nuevo libro (ej. El Principito)"
+            required
+            className="flex-1 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+          />
+          <input
+            type="number"
+            name="total_pages"
+            placeholder="Páginas"
+            min={1}
+            required
+            className="w-24 rounded border border-black/20 px-3 py-2 dark:border-white/20"
           />
           <button
             type="submit"
-            className="self-end rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+            className="rounded border border-black/20 px-3 py-2 dark:border-white/20"
           >
-            {journal ? "Actualizar" : "Guardar"}
+            +
           </button>
         </form>
       </section>
 
       <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
         <h2 className="mb-2 font-medium">
-          Lectura {reading && reading.pages_read >= 10 ? "✓" : ""}
+          Bloque creativo · {creativeMinutes}/{WEEKLY_CREATIVE_GOAL_MINUTES}{" "}
+          min esta semana
         </h2>
-        <form action={saveReadingLog} className="flex flex-col gap-2">
-          <input
-            name="book_title"
-            defaultValue={reading?.books?.title ?? ""}
-            placeholder="Libro (opcional)"
-            className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-          />
-          <div className="flex gap-2">
-            <input
-              type="number"
-              name="pages_read"
-              defaultValue={reading?.pages_read ?? ""}
-              placeholder="Páginas leídas hoy"
-              min={1}
-              className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-            />
-            <button
-              type="submit"
-              className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-            >
-              {reading ? "Actualizar" : "Guardar"}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <h2 className="mb-2 font-medium">
-          Bloque creativo · {creativeCount}/2 esta semana
-        </h2>
-        <form action={saveCreativeBlock} className="flex flex-col gap-2">
+        <form action={saveCreativeBlock} className="flex gap-2">
           <input
             name="activity"
             placeholder="Actividad (ej. guitarra)"
             required
-            className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+            className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
           />
-          <div className="flex gap-2">
-            <input
-              type="number"
-              name="duration_minutes"
-              placeholder="Minutos"
-              min={1}
-              required
-              className="w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-            />
-            <input
-              name="notes"
-              placeholder="Nota (opcional)"
-              className="flex-1 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-            />
-          </div>
+          <input
+            type="number"
+            name="duration_minutes"
+            placeholder="Minutos"
+            min={1}
+            required
+            className="w-24 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+          />
           <button
             type="submit"
-            className="self-end rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+            className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
           >
-            Registrar bloque
+            Registrar
           </button>
         </form>
       </section>

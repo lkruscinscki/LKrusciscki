@@ -38,19 +38,38 @@ export async function undoMeditation() {
   revalidatePath("/");
 }
 
-export async function saveJournalEntry(formData: FormData) {
+export async function logJournaling() {
   const { supabase, user } = await requireUser();
   const gameDate = await getTodayGameDate(supabase, user.id);
-  const content = ((formData.get("content") as string) ?? "").trim();
-
-  if (!content) return;
 
   await supabase
     .from("journal_entries")
     .upsert(
-      { game_date: gameDate, content },
+      { game_date: gameDate, content: null },
       { onConflict: "user_id,game_date" },
     );
+
+  revalidatePath("/");
+}
+
+export async function undoJournaling() {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+
+  await supabase.from("journal_entries").delete().eq("game_date", gameDate);
+
+  revalidatePath("/");
+}
+
+export async function addBook(formData: FormData) {
+  const { supabase } = await requireUser();
+  const title = ((formData.get("title") as string) ?? "").trim();
+  const totalPagesRaw = formData.get("total_pages");
+  const total_pages = totalPagesRaw ? Number(totalPagesRaw) : 0;
+
+  if (!title || total_pages <= 0) return;
+
+  await supabase.from("books").insert({ title, total_pages });
 
   revalidatePath("/");
 }
@@ -60,30 +79,9 @@ export async function saveReadingLog(formData: FormData) {
   const gameDate = await getTodayGameDate(supabase, user.id);
   const pagesRaw = formData.get("pages_read");
   const pages_read = pagesRaw ? Number(pagesRaw) : 0;
-  const bookTitle = ((formData.get("book_title") as string) ?? "").trim();
+  const book_id = formData.get("book_id") as string;
 
-  if (!pages_read || pages_read <= 0) return;
-
-  let book_id: string | null = null;
-
-  if (bookTitle) {
-    const { data: existing } = await supabase
-      .from("books")
-      .select("id")
-      .ilike("title", bookTitle)
-      .maybeSingle();
-
-    if (existing) {
-      book_id = existing.id;
-    } else {
-      const { data: created } = await supabase
-        .from("books")
-        .insert({ title: bookTitle })
-        .select("id")
-        .single();
-      book_id = created?.id ?? null;
-    }
-  }
+  if (!book_id || !pages_read || pages_read <= 0) return;
 
   await supabase
     .from("reading_logs")
@@ -91,6 +89,25 @@ export async function saveReadingLog(formData: FormData) {
       { game_date: gameDate, pages_read, book_id },
       { onConflict: "user_id,game_date" },
     );
+
+  const { data: book } = await supabase
+    .from("books")
+    .select("total_pages, reading_logs(pages_read)")
+    .eq("id", book_id)
+    .single();
+
+  if (book) {
+    const totalRead = book.reading_logs.reduce(
+      (sum, log) => sum + log.pages_read,
+      0,
+    );
+    if (totalRead >= book.total_pages) {
+      await supabase
+        .from("books")
+        .update({ status: "finished" })
+        .eq("id", book_id);
+    }
+  }
 
   revalidatePath("/");
 }
@@ -101,14 +118,12 @@ export async function saveCreativeBlock(formData: FormData) {
   const activity = ((formData.get("activity") as string) ?? "").trim();
   const durationRaw = formData.get("duration_minutes");
   const duration_minutes = durationRaw ? Number(durationRaw) : 0;
-  const notes = ((formData.get("notes") as string) ?? "").trim() || null;
 
   if (!activity || duration_minutes <= 0) return;
 
   await supabase.from("creative_blocks").insert({
     activity,
     duration_minutes,
-    notes,
     date: gameDate,
   });
 

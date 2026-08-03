@@ -46,6 +46,7 @@ export type Database = {
           id: string
           status: Database["public"]["Enums"]["book_status"]
           title: string
+          total_pages: number
           user_id: string
         }
         Insert: {
@@ -54,6 +55,7 @@ export type Database = {
           id?: string
           status?: Database["public"]["Enums"]["book_status"]
           title: string
+          total_pages: number
           user_id?: string
         }
         Update: {
@@ -62,6 +64,7 @@ export type Database = {
           id?: string
           status?: Database["public"]["Enums"]["book_status"]
           title?: string
+          total_pages?: number
           user_id?: string
         }
         Relationships: []
@@ -177,7 +180,6 @@ export type Database = {
           date: string
           duration_minutes: number
           id: string
-          notes: string | null
           user_id: string
         }
         Insert: {
@@ -186,7 +188,6 @@ export type Database = {
           date: string
           duration_minutes: number
           id?: string
-          notes?: string | null
           user_id?: string
         }
         Update: {
@@ -195,7 +196,6 @@ export type Database = {
           date?: string
           duration_minutes?: number
           id?: string
-          notes?: string | null
           user_id?: string
         }
         Relationships: []
@@ -363,21 +363,21 @@ export type Database = {
       }
       journal_entries: {
         Row: {
-          content: string
+          content: string | null
           created_at: string
           game_date: string
           id: string
           user_id: string
         }
         Insert: {
-          content: string
+          content?: string | null
           created_at?: string
           game_date: string
           id?: string
           user_id?: string
         }
         Update: {
-          content?: string
+          content?: string | null
           created_at?: string
           game_date?: string
           id?: string
@@ -503,7 +503,7 @@ export type Database = {
       }
       reading_logs: {
         Row: {
-          book_id: string | null
+          book_id: string
           created_at: string
           game_date: string
           id: string
@@ -511,7 +511,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          book_id?: string | null
+          book_id: string
           created_at?: string
           game_date: string
           id?: string
@@ -519,7 +519,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
-          book_id?: string | null
+          book_id?: string
           created_at?: string
           game_date?: string
           id?: string
