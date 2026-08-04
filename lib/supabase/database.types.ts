@@ -640,36 +640,6 @@ export type Database = {
         }
         Relationships: []
       }
-      streaks: {
-        Row: {
-          current_count: number
-          id: string
-          last_completed_date: string | null
-          longest_count: number
-          streak_type: Database["public"]["Enums"]["streak_type"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          current_count?: number
-          id?: string
-          last_completed_date?: string | null
-          longest_count?: number
-          streak_type: Database["public"]["Enums"]["streak_type"]
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          current_count?: number
-          id?: string
-          last_completed_date?: string | null
-          longest_count?: number
-          streak_type?: Database["public"]["Enums"]["streak_type"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       study_sessions: {
         Row: {
           created_at: string

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { getTodayGameDate, getWeekStart } from "@/lib/game-day";
+import { getTodayGameDate, getWeekStart, addDays, computeStreak } from "@/lib/game-day";
+import { WEEKLY_GOALS } from "@/lib/game-config";
 import {
   logMeditation,
   undoMeditation,
@@ -15,8 +16,16 @@ import {
   saveSleep,
 } from "./actions";
 
-// TODO(fase 4): mover a lib/game-config.ts junto con el resto de objetivos.
-const WEEKLY_CREATIVE_GOAL_MINUTES = 120;
+const STREAK_LOOKBACK_DAYS = 60;
+
+function StreakBadge({ days }: { days: number }) {
+  if (days === 0) return null;
+  return (
+    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+      🔥 {days} día{days === 1 ? "" : "s"}
+    </span>
+  );
+}
 
 export default async function HabitosPage() {
   const supabase = await createClient();
@@ -26,6 +35,7 @@ export default async function HabitosPage() {
 
   const today = await getTodayGameDate(supabase, user!.id);
   const weekStart = getWeekStart(today);
+  const streakSince = addDays(today, -STREAK_LOOKBACK_DAYS);
 
   const [
     { data: meditation },
@@ -37,6 +47,9 @@ export default async function HabitosPage() {
     { data: chessThisWeek },
     { data: waterToday },
     { data: sleepToday },
+    { data: meditationStreakRows },
+    { data: journalStreakRows },
+    { data: readingStreakRows },
   ] = await Promise.all([
     supabase
       .from("meditation_logs")
@@ -81,6 +94,9 @@ export default async function HabitosPage() {
       .select("*")
       .eq("game_date", today)
       .maybeSingle(),
+    supabase.from("meditation_logs").select("game_date").gte("game_date", streakSince),
+    supabase.from("journal_entries").select("game_date").gte("game_date", streakSince),
+    supabase.from("reading_logs").select("game_date").gte("game_date", streakSince),
   ]);
 
   const creativeMinutes = (creativeBlocksThisWeek ?? []).reduce(
@@ -88,12 +104,27 @@ export default async function HabitosPage() {
     0,
   );
 
+  const meditationStreak = computeStreak(
+    new Set((meditationStreakRows ?? []).map((r) => r.game_date)),
+    today,
+  );
+  const journalStreak = computeStreak(
+    new Set((journalStreakRows ?? []).map((r) => r.game_date)),
+    today,
+  );
+  const readingStreak = computeStreak(
+    new Set((readingStreakRows ?? []).map((r) => r.game_date)),
+    today,
+  );
+
   return (
     <div className="flex flex-col gap-6 p-4">
       <h1 className="text-2xl font-semibold">Hábitos</h1>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">Meditación</h2>
+        <h2 className="mb-2 flex items-center justify-between font-medium">
+          Meditación <StreakBadge days={meditationStreak} />
+        </h2>
         {meditation ? (
           <div className="flex items-center justify-between">
             <p className="text-sm text-accent">
@@ -125,7 +156,9 @@ export default async function HabitosPage() {
       </section>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">Journaling</h2>
+        <h2 className="mb-2 flex items-center justify-between font-medium">
+          Journaling <StreakBadge days={journalStreak} />
+        </h2>
         {journal ? (
           <div className="flex items-center justify-between">
             <p className="text-sm text-accent">✓ Hecho hoy</p>
@@ -145,7 +178,9 @@ export default async function HabitosPage() {
       </section>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">Lectura</h2>
+        <h2 className="mb-2 flex items-center justify-between font-medium">
+          Lectura <StreakBadge days={readingStreak} />
+        </h2>
 
         {booksReading && booksReading.length > 0 ? (
           <ul className="mb-3 flex flex-col gap-1">
@@ -236,8 +271,8 @@ export default async function HabitosPage() {
 
       <section className="card">
         <h2 className="mb-2 font-medium">
-          Bloque creativo · {creativeMinutes}/{WEEKLY_CREATIVE_GOAL_MINUTES}{" "}
-          min esta semana
+          Bloque creativo · {creativeMinutes}/
+          {WEEKLY_GOALS.creativeBlockMinutes} min esta semana
         </h2>
         <form action={saveCreativeBlock} className="flex gap-2">
           <input

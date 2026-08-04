@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getTodayGameDate } from "@/lib/game-day";
+import { grantXp } from "@/lib/xp";
+import { XP } from "@/lib/game-config";
 
 export async function addProject(formData: FormData) {
   const supabase = await createClient();
@@ -13,7 +16,7 @@ export async function addProject(formData: FormData) {
 
   await supabase.from("projects").insert({ name, description });
 
-  revalidatePath("/registrar/proyectos");
+  revalidatePath("/proyectos");
 }
 
 export async function updateProjectStatus(formData: FormData) {
@@ -26,11 +29,16 @@ export async function updateProjectStatus(formData: FormData) {
     .update({ status: status as "active" | "paused" | "finished" })
     .eq("id", id);
 
-  revalidatePath("/registrar/proyectos");
+  revalidatePath("/proyectos");
 }
 
 export async function addProjectLog(formData: FormData) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
   const project_id = formData.get("project_id") as string;
   const date = formData.get("date") as string;
   const notes = ((formData.get("notes") as string) ?? "").trim();
@@ -41,5 +49,16 @@ export async function addProjectLog(formData: FormData) {
 
   await supabase.from("project_logs").insert({ project_id, date, notes, hours });
 
-  revalidatePath("/registrar/proyectos");
+  const today = await getTodayGameDate(supabase, user.id);
+  await grantXp(supabase, {
+    pillar: "profesional",
+    sourceType: "project_log",
+    sourceId: project_id,
+    baseXp: XP.profesional.projectLogEntry,
+    gameDate: today,
+    dedupe: true,
+  });
+
+  revalidatePath("/proyectos");
+  revalidatePath("/inicio");
 }

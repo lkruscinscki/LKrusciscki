@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate } from "@/lib/game-day";
+import { grantXp, revokeXp } from "@/lib/xp";
+import { XP } from "@/lib/game-config";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -11,6 +13,13 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No autenticado");
   return { supabase, user };
+}
+
+function computeReadingXp(pagesRead: number): number {
+  if (pagesRead < XP.personal.readingMinPages) return 0;
+  const extraPages = pagesRead - XP.personal.readingMinPages;
+  const bonus = Math.floor(extraPages / 5) * XP.personal.readingPerExtra5Pages;
+  return Math.min(XP.personal.readingBase + bonus, XP.personal.readingCap);
 }
 
 export async function logMeditation(formData: FormData) {
@@ -26,7 +35,16 @@ export async function logMeditation(formData: FormData) {
       { onConflict: "user_id,game_date" },
     );
 
+  await grantXp(supabase, {
+    pillar: "personal",
+    sourceType: "meditation",
+    baseXp: XP.personal.meditation,
+    gameDate,
+    dedupe: true,
+  });
+
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function undoMeditation() {
@@ -34,8 +52,10 @@ export async function undoMeditation() {
   const gameDate = await getTodayGameDate(supabase, user.id);
 
   await supabase.from("meditation_logs").delete().eq("game_date", gameDate);
+  await revokeXp(supabase, { sourceType: "meditation", gameDate });
 
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function logJournaling() {
@@ -49,7 +69,16 @@ export async function logJournaling() {
       { onConflict: "user_id,game_date" },
     );
 
+  await grantXp(supabase, {
+    pillar: "personal",
+    sourceType: "journaling",
+    baseXp: XP.personal.journaling,
+    gameDate,
+    dedupe: true,
+  });
+
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function undoJournaling() {
@@ -57,8 +86,10 @@ export async function undoJournaling() {
   const gameDate = await getTodayGameDate(supabase, user.id);
 
   await supabase.from("journal_entries").delete().eq("game_date", gameDate);
+  await revokeXp(supabase, { sourceType: "journaling", gameDate });
 
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function addBook(formData: FormData) {
@@ -109,7 +140,21 @@ export async function saveReadingLog(formData: FormData) {
     }
   }
 
+  const readingXp = computeReadingXp(pages_read);
+  if (readingXp > 0) {
+    await grantXp(supabase, {
+      pillar: "personal",
+      sourceType: "reading",
+      baseXp: readingXp,
+      gameDate,
+      dedupe: true,
+    });
+  } else {
+    await revokeXp(supabase, { sourceType: "reading", gameDate });
+  }
+
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function saveCreativeBlock(formData: FormData) {
@@ -121,13 +166,24 @@ export async function saveCreativeBlock(formData: FormData) {
 
   if (!activity || duration_minutes <= 0) return;
 
-  await supabase.from("creative_blocks").insert({
-    activity,
-    duration_minutes,
-    date: gameDate,
-  });
+  const { data: block } = await supabase
+    .from("creative_blocks")
+    .insert({ activity, duration_minutes, date: gameDate })
+    .select("id")
+    .single();
+
+  if (block && duration_minutes >= XP.personal.creativeBlockMinMinutes) {
+    await grantXp(supabase, {
+      pillar: "personal",
+      sourceType: "creative_block",
+      sourceId: block.id,
+      baseXp: XP.personal.creativeBlock,
+      gameDate,
+    });
+  }
 
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function logChess() {
@@ -138,7 +194,16 @@ export async function logChess() {
     .from("chess_sessions")
     .upsert({ game_date: gameDate }, { onConflict: "user_id,game_date" });
 
+  await grantXp(supabase, {
+    pillar: "personal",
+    sourceType: "chess",
+    baseXp: XP.personal.chess,
+    gameDate,
+    dedupe: true,
+  });
+
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function undoChess() {
@@ -146,8 +211,10 @@ export async function undoChess() {
   const gameDate = await getTodayGameDate(supabase, user.id);
 
   await supabase.from("chess_sessions").delete().eq("game_date", gameDate);
+  await revokeXp(supabase, { sourceType: "chess", gameDate });
 
   revalidatePath("/");
+  revalidatePath("/inicio");
 }
 
 export async function incrementWater() {
@@ -206,5 +273,18 @@ export async function saveSleep(formData: FormData) {
     .from("sleep_logs")
     .upsert({ game_date: gameDate, hours }, { onConflict: "user_id,game_date" });
 
+  if (hours > 0) {
+    await grantXp(supabase, {
+      pillar: "personal",
+      sourceType: "sleep",
+      baseXp: XP.personal.sleep,
+      gameDate,
+      dedupe: true,
+    });
+  } else {
+    await revokeXp(supabase, { sourceType: "sleep", gameDate });
+  }
+
   revalidatePath("/");
+  revalidatePath("/inicio");
 }

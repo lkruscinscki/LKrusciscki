@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getTodayGameDate } from "@/lib/game-day";
+import { grantXp } from "@/lib/xp";
+import { XP } from "@/lib/game-config";
 
 export async function addCompetition(formData: FormData) {
   const supabase = await createClient();
@@ -29,6 +32,11 @@ export async function addCompetition(formData: FormData) {
 
 export async function addMatch(formData: FormData) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
   const competition_id = formData.get("competition_id") as string;
   const result = formData.get("result") as string;
   const method = formData.get("method") as string;
@@ -42,14 +50,36 @@ export async function addMatch(formData: FormData) {
     .select("*", { count: "exact", head: true })
     .eq("competition_id", competition_id);
 
-  await supabase.from("competition_matches").insert({
-    competition_id,
-    match_order: (count ?? 0) + 1,
-    result: result as "win" | "loss" | "draw",
-    method: method as "submission" | "points" | "decision" | "dq" | "other",
-    score,
-    notes,
-  });
+  const matchOrder = (count ?? 0) + 1;
+
+  const { data: match } = await supabase
+    .from("competition_matches")
+    .insert({
+      competition_id,
+      match_order: matchOrder,
+      result: result as "win" | "loss" | "draw",
+      method: method as "submission" | "points" | "decision" | "dq" | "other",
+      score,
+      notes,
+    })
+    .select("id")
+    .single();
+
+  if (match) {
+    const today = await getTodayGameDate(supabase, user.id);
+    const baseXp =
+      XP.deportivo.competitionMatch +
+      (matchOrder === 1 ? XP.deportivo.competitionBonus : 0);
+
+    await grantXp(supabase, {
+      pillar: "deportivo",
+      sourceType: "competition_match",
+      sourceId: match.id,
+      baseXp,
+      gameDate: today,
+    });
+  }
 
   revalidatePath(`/entrenamiento/jiujitsu/competencias/${competition_id}`);
+  revalidatePath("/inicio");
 }

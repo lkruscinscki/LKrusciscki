@@ -1,11 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
-import { getTodayGameDate, addDays, computeStreak } from "@/lib/game-day";
+import { getTodayGameDate } from "@/lib/game-day";
 import { getMonthGrid, getMonthLabel, getMonthRange } from "@/lib/calendar";
 import { StatTile } from "../stat-tile";
 import { logout } from "@/app/login/actions";
+import { getCurrentStreak, getPillarXpTotals, getXpEarnedOnDate } from "@/lib/xp";
+import { getLevelFromXp } from "@/lib/game-config";
+import type { Database } from "@/lib/supabase/database.types";
 
-const STREAK_LOOKBACK_DAYS = 60;
+type Pillar = Database["public"]["Enums"]["pillar"];
+
 const WEEKDAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
+const PILLARS: { key: Pillar; label: string }[] = [
+  { key: "academico", label: "Académico" },
+  { key: "deportivo", label: "Deportivo" },
+  { key: "profesional", label: "Profesional" },
+  { key: "personal", label: "Personal" },
+];
 
 export default async function InicioPage() {
   const supabase = await createClient();
@@ -15,7 +25,6 @@ export default async function InicioPage() {
 
   const today = await getTodayGameDate(supabase, user!.id);
   const { start: monthStart, end: monthEnd } = getMonthRange(today);
-  const streakSince = addDays(today, -STREAK_LOOKBACK_DAYS);
 
   const [
     { data: jiujitsuMonth },
@@ -26,10 +35,9 @@ export default async function InicioPage() {
     { data: chessMonth },
     { data: sleepMonth },
     { data: waterMonth },
-    { data: meditationStreak },
-    { data: journalStreak },
-    { data: readingStreak },
-    { data: chessStreak },
+    { streakDays, multiplier },
+    pillarTotals,
+    xpToday,
   ] = await Promise.all([
     supabase
       .from("jiujitsu_sessions")
@@ -71,10 +79,9 @@ export default async function InicioPage() {
       .select("bottles_count")
       .gte("game_date", monthStart)
       .lte("game_date", monthEnd),
-    supabase.from("meditation_logs").select("game_date").gte("game_date", streakSince),
-    supabase.from("journal_entries").select("game_date").gte("game_date", streakSince),
-    supabase.from("reading_logs").select("game_date").gte("game_date", streakSince),
-    supabase.from("chess_sessions").select("game_date").gte("game_date", streakSince),
+    getCurrentStreak(supabase, today),
+    getPillarXpTotals(supabase),
+    getXpEarnedOnDate(supabase, today),
   ]);
 
   const habitDaysThisMonth = new Set<string>([
@@ -89,16 +96,15 @@ export default async function InicioPage() {
     ...(crossTrainingMonth ?? []).map((r) => r.date),
   ]);
 
-  const streakDays = new Set<string>([
-    ...(meditationStreak ?? []).map((r) => r.game_date),
-    ...(journalStreak ?? []).map((r) => r.game_date),
-    ...(readingStreak ?? []).map((r) => r.game_date),
-    ...(chessStreak ?? []).map((r) => r.game_date),
-  ]);
-
-  const streak = computeStreak(streakDays, today);
   const grid = getMonthGrid(today);
   const monthLabel = getMonthLabel(today);
+
+  const levels = PILLARS.map((p) => ({
+    ...p,
+    ...getLevelFromXp(pillarTotals[p.key]),
+  }));
+  const overallLevel =
+    levels.reduce((sum, l) => sum + l.level, 0) / levels.length;
 
   const totalTrainingSessions =
     (jiujitsuMonth?.length ?? 0) + (crossTrainingMonth?.length ?? 0);
@@ -133,16 +139,56 @@ export default async function InicioPage() {
     <div className="flex flex-col gap-6 p-4">
       <h1 className="text-2xl font-semibold">Inicio</h1>
 
-      <section className="card flex items-center justify-between">
-        <div>
+      <div className="grid grid-cols-2 gap-3">
+        <section className="card">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-            Racha de hábitos
+            Racha global
           </p>
           <p className="text-3xl font-semibold text-accent">
-            {streak} día{streak === 1 ? "" : "s"}
+            {streakDays}
+            <span className="text-lg"> día{streakDays === 1 ? "" : "s"}</span>
           </p>
+          {multiplier > 1 && (
+            <p className="text-xs text-accent">×{multiplier} XP hoy</p>
+          )}
+        </section>
+
+        <section className="card">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            XP hoy
+          </p>
+          <p className="text-3xl font-semibold">{Math.round(xpToday)}</p>
+        </section>
+      </div>
+
+      <section className="card">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-medium">Niveles</h2>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            General · Nv. {overallLevel.toFixed(1)}
+          </span>
         </div>
-        <span className="text-4xl">🔥</span>
+        <div className="grid grid-cols-2 gap-3">
+          {levels.map((l) => {
+            const progress =
+              l.xpForNextLevel > 0 ? l.xpIntoLevel / l.xpForNextLevel : 0;
+            return (
+              <div key={l.key} className="rounded-lg bg-black/5 p-3 dark:bg-white/5">
+                <p className="text-sm font-medium">{l.label}</p>
+                <p className="text-lg font-semibold">Nv. {l.level}</p>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                  <div
+                    className="h-full bg-accent"
+                    style={{ width: `${Math.round(progress * 100)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {Math.round(l.xpIntoLevel)}/{l.xpForNextLevel} XP
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <section className="card">

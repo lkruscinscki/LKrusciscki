@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate } from "@/lib/game-day";
+import { grantXp } from "@/lib/xp";
+import { XP } from "@/lib/game-config";
 
 export async function addJiujitsuSession(formData: FormData) {
   const supabase = await createClient();
@@ -26,17 +28,38 @@ export async function addJiujitsuSession(formData: FormData) {
 
   if (!duration_minutes) return;
 
-  await supabase.from("jiujitsu_sessions").insert({
-    date,
-    type: "no_gi",
-    duration_minutes,
-    sparring_rounds,
-    submissions_achieved,
-    submissions_received,
-    new_techniques,
-    notes,
-  });
+  const { data: session } = await supabase
+    .from("jiujitsu_sessions")
+    .insert({
+      date,
+      type: "no_gi",
+      duration_minutes,
+      sparring_rounds,
+      submissions_achieved,
+      submissions_received,
+      new_techniques,
+      notes,
+    })
+    .select("id")
+    .single();
+
+  if (session) {
+    const baseXp =
+      XP.deportivo.jiujitsuSession +
+      submissions_achieved * XP.deportivo.submissionAchieved +
+      submissions_received * XP.deportivo.submissionReceived +
+      (notes ? XP.deportivo.sessionNotesBonus : 0);
+
+    await grantXp(supabase, {
+      pillar: "deportivo",
+      sourceType: "jiujitsu_session",
+      sourceId: session.id,
+      baseXp,
+      gameDate: date,
+    });
+  }
 
   revalidatePath("/entrenamiento/jiujitsu/nuevo");
   revalidatePath("/entrenamiento/jiujitsu/estadisticas");
+  revalidatePath("/inicio");
 }
