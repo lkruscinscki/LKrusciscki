@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getTodayGameDate } from "@/lib/game-day";
+import { getTodayGameDate, getWeekStart } from "@/lib/game-day";
 import { getMonthGrid, getMonthLabel, getMonthRange } from "@/lib/calendar";
 import { StatTile } from "../stat-tile";
 import { logout } from "@/app/login/actions";
@@ -17,6 +18,12 @@ const PILLARS: { key: Pillar; label: string }[] = [
   { key: "personal", label: "Personal" },
 ];
 
+function semaforoEmoji(progress: number, goal: number): string {
+  if (progress >= goal) return "🟢";
+  if (progress > 0) return "🟡";
+  return "🔴";
+}
+
 export default async function InicioPage() {
   const supabase = await createClient();
   const {
@@ -25,6 +32,7 @@ export default async function InicioPage() {
 
   const today = await getTodayGameDate(supabase, user!.id);
   const { start: monthStart, end: monthEnd } = getMonthRange(today);
+  const weekStart = getWeekStart(today);
 
   const [
     { data: jiujitsuMonth },
@@ -35,6 +43,8 @@ export default async function InicioPage() {
     { data: chessMonth },
     { data: sleepMonth },
     { data: waterMonth },
+    { data: subjects },
+    { data: weekExerciseLogs },
     { streakDays, multiplier },
     pillarTotals,
     xpToday,
@@ -79,6 +89,11 @@ export default async function InicioPage() {
       .select("bottles_count")
       .gte("game_date", monthStart)
       .lte("game_date", monthEnd),
+    supabase.from("subjects").select("*").order("created_at"),
+    supabase
+      .from("exercise_progress_logs")
+      .select("subject_id, exercises_added")
+      .gte("game_date", weekStart),
     getCurrentStreak(supabase, today),
     getPillarXpTotals(supabase),
     getXpEarnedOnDate(supabase, today),
@@ -105,6 +120,14 @@ export default async function InicioPage() {
   }));
   const overallLevel =
     levels.reduce((sum, l) => sum + l.level, 0) / levels.length;
+
+  const weekProgressBySubject = new Map<string, number>();
+  for (const log of weekExerciseLogs ?? []) {
+    weekProgressBySubject.set(
+      log.subject_id,
+      (weekProgressBySubject.get(log.subject_id) ?? 0) + log.exercises_added,
+    );
+  }
 
   const totalTrainingSessions =
     (jiujitsuMonth?.length ?? 0) + (crossTrainingMonth?.length ?? 0);
@@ -189,6 +212,44 @@ export default async function InicioPage() {
             );
           })}
         </div>
+      </section>
+
+      <section className="card">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-medium">Materias</h2>
+          <Link href="/materias" className="text-sm text-accent">
+            ver todas
+          </Link>
+        </div>
+        {subjects && subjects.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {subjects.map((subject) => {
+              const progress = weekProgressBySubject.get(subject.id) ?? 0;
+              return (
+                <li key={subject.id}>
+                  <Link
+                    href={`/materias/${subject.id}`}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: subject.color }}
+                    />
+                    <span className="flex-1">{subject.name}</span>
+                    <span>{semaforoEmoji(progress, subject.weekly_exercise_goal)}</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      {progress}/{subject.weekly_exercise_goal}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-zinc-400">
+            Todavía no cargaste materias. <Link href="/materias" className="text-accent">Agregar</Link>
+          </p>
+        )}
       </section>
 
       <section className="card">

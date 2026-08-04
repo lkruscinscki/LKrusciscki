@@ -1,5 +1,5 @@
 import { addJiujitsuSession } from "./actions";
-import { BackLink } from "../back-link";
+import { BackLink } from "../../../back-link";
 
 export default function NuevoEntrenamientoPage() {
   return (

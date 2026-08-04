@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, daysBetween } from "@/lib/game-day";
 import { addCompetition } from "./actions";
-import { BackLink } from "../back-link";
+import { BackLink } from "../../../back-link";
 
 export default async function CompetenciasPage() {
   const supabase = await createClient();

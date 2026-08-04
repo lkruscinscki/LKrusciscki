@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, daysBetween } from "@/lib/game-day";
 import { addMatch } from "../actions";
-import { BackLink } from "../../back-link";
+import { BackLink } from "../../../../back-link";
 
 const RESULT_LABELS: Record<string, string> = {
   win: "Victoria",

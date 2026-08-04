@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMonthLabel } from "@/lib/calendar";
 import { StatTile } from "../../../stat-tile";
-import { BackLink } from "../back-link";
+import { BackLink } from "../../../back-link";
 
 export default async function JiujitsuEstadisticasPage() {
   const supabase = await createClient();
