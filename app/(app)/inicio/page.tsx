@@ -47,6 +47,7 @@ export default async function InicioPage() {
     { data: weekExerciseLogs },
     { data: upcomingExams },
     { data: upcomingCompetitions },
+    { data: examsThisMonth },
     { streakDays, multiplier },
     pillarTotals,
     xpToday,
@@ -108,6 +109,11 @@ export default async function InicioPage() {
       .gte("date", today)
       .order("date")
       .limit(5),
+    supabase
+      .from("exams")
+      .select("date")
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
     getCurrentStreak(supabase, today),
     getPillarXpTotals(supabase),
     getXpEarnedOnDate(supabase, today),
@@ -124,6 +130,10 @@ export default async function InicioPage() {
     ...(jiujitsuMonth ?? []).map((r) => r.date),
     ...(crossTrainingMonth ?? []).map((r) => r.date),
   ]);
+
+  const examDaysThisMonth = new Set<string>(
+    (examsThisMonth ?? []).map((e) => e.date),
+  );
 
   const grid = getMonthGrid(today);
   const monthLabel = getMonthLabel(today);
@@ -316,6 +326,7 @@ export default async function InicioPage() {
             const isToday = day.date === today;
             const hasHabit = habitDaysThisMonth.has(day.date);
             const hasTraining = trainingDaysThisMonth.has(day.date);
+            const hasExam = examDaysThisMonth.has(day.date);
             return (
               <div
                 key={day.date}
@@ -326,13 +337,19 @@ export default async function InicioPage() {
                 }`}
               >
                 <span>{Number(day.date.slice(8, 10))}</span>
-                {hasTraining && <span className="text-[10px]">🥋</span>}
+                {(hasTraining || hasExam) && (
+                  <span className="text-[9px] leading-none">
+                    {hasTraining && "🥋"}
+                    {hasExam && "📝"}
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
         <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-          Fondo resaltado = al menos un hábito ese día · 🥋 = entrenaste
+          Fondo resaltado = al menos un hábito ese día · 🥋 = entrenaste ·{" "}
+          📝 = parcial
         </p>
       </section>
 

@@ -109,13 +109,19 @@ export default async function SubjectDetailPage({
           <ul className="flex flex-col gap-2">
             {guides.map((guide) => (
               <li key={guide.id} className="card">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">
                     {guide.name}
                     {guide.completed_at ? " ✓" : ""}
                   </span>
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <span className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
                     {guide.completed_exercises}/{guide.total_exercises}
+                    <Link
+                      href={`/materias/${id}/guias/${guide.id}/editar`}
+                      className="text-accent"
+                    >
+                      editar
+                    </Link>
                   </span>
                 </div>
                 {!guide.completed_at && (
@@ -178,21 +184,23 @@ export default async function SubjectDetailPage({
               const isPast = exam.date < today;
               const days = daysBetween(today, exam.date);
               return (
-                <li
-                  key={exam.id}
-                  className="card flex items-center justify-between text-sm"
-                >
-                  <div>
-                    <p className="font-medium">{exam.name}</p>
-                    <p className="text-zinc-500 dark:text-zinc-400">
-                      {exam.date}
-                    </p>
-                  </div>
-                  {!isPast && (
-                    <span className="text-accent">
-                      {days === 0 ? "hoy" : `${days}d`}
-                    </span>
-                  )}
+                <li key={exam.id}>
+                  <Link
+                    href={`/materias/${id}/parciales/${exam.id}/editar`}
+                    className="card flex items-center justify-between text-sm"
+                  >
+                    <div>
+                      <p className="font-medium">{exam.name}</p>
+                      <p className="text-zinc-500 dark:text-zinc-400">
+                        {exam.date}
+                      </p>
+                    </div>
+                    {!isPast && (
+                      <span className="text-accent">
+                        {days === 0 ? "hoy" : `${days}d`}
+                      </span>
+                    )}
+                  </Link>
                 </li>
               );
             })}

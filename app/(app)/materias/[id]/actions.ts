@@ -56,6 +56,35 @@ export async function addExam(formData: FormData) {
   redirect(`/materias/${subject_id}`);
 }
 
+export async function updateExam(formData: FormData) {
+  const supabase = await createClient();
+  const exam_id = formData.get("exam_id") as string;
+  const subject_id = formData.get("subject_id") as string;
+  const name = ((formData.get("name") as string) ?? "").trim();
+  const date = formData.get("date") as string;
+
+  if (!exam_id || !subject_id || !name || !date) return;
+
+  await supabase.from("exams").update({ name, date }).eq("id", exam_id);
+
+  revalidatePath(`/materias/${subject_id}`);
+  revalidatePath("/inicio");
+  redirect(`/materias/${subject_id}`);
+}
+
+export async function deleteExam(formData: FormData) {
+  const supabase = await createClient();
+  const exam_id = formData.get("exam_id") as string;
+  const subject_id = formData.get("subject_id") as string;
+  if (!exam_id || !subject_id) return;
+
+  await supabase.from("exams").delete().eq("id", exam_id);
+
+  revalidatePath(`/materias/${subject_id}`);
+  revalidatePath("/inicio");
+  redirect(`/materias/${subject_id}`);
+}
+
 export async function addGuide(formData: FormData) {
   const supabase = await createClient();
   const subject_id = formData.get("subject_id") as string;
@@ -70,6 +99,37 @@ export async function addGuide(formData: FormData) {
     name,
     total_exercises,
   });
+
+  revalidatePath(`/materias/${subject_id}`);
+  redirect(`/materias/${subject_id}`);
+}
+
+export async function updateGuide(formData: FormData) {
+  const supabase = await createClient();
+  const guide_id = formData.get("guide_id") as string;
+  const subject_id = formData.get("subject_id") as string;
+  const name = ((formData.get("name") as string) ?? "").trim();
+  const totalRaw = formData.get("total_exercises");
+  const total_exercises = totalRaw ? Number(totalRaw) : 0;
+
+  if (!guide_id || !subject_id || !name || total_exercises <= 0) return;
+
+  await supabase
+    .from("guides")
+    .update({ name, total_exercises })
+    .eq("id", guide_id);
+
+  revalidatePath(`/materias/${subject_id}`);
+  redirect(`/materias/${subject_id}`);
+}
+
+export async function deleteGuide(formData: FormData) {
+  const supabase = await createClient();
+  const guide_id = formData.get("guide_id") as string;
+  const subject_id = formData.get("subject_id") as string;
+  if (!guide_id || !subject_id) return;
+
+  await supabase.from("guides").delete().eq("id", guide_id);
 
   revalidatePath(`/materias/${subject_id}`);
   redirect(`/materias/${subject_id}`);
