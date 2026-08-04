@@ -53,6 +53,7 @@ export async function addExam(formData: FormData) {
 
   revalidatePath(`/materias/${subject_id}`);
   revalidatePath("/inicio");
+  redirect(`/materias/${subject_id}`);
 }
 
 export async function addGuide(formData: FormData) {
@@ -61,7 +62,6 @@ export async function addGuide(formData: FormData) {
   const name = ((formData.get("name") as string) ?? "").trim();
   const totalRaw = formData.get("total_exercises");
   const total_exercises = totalRaw ? Number(totalRaw) : 0;
-  const target_date = (formData.get("target_date") as string) || null;
 
   if (!subject_id || !name || total_exercises <= 0) return;
 
@@ -69,8 +69,21 @@ export async function addGuide(formData: FormData) {
     subject_id,
     name,
     total_exercises,
-    target_date,
   });
+
+  revalidatePath(`/materias/${subject_id}`);
+  redirect(`/materias/${subject_id}`);
+}
+
+export async function updateGuideNotes(formData: FormData) {
+  const supabase = await createClient();
+  const guide_id = formData.get("guide_id") as string;
+  const subject_id = formData.get("subject_id") as string;
+  const notes = ((formData.get("notes") as string) ?? "").trim() || null;
+
+  if (!guide_id) return;
+
+  await supabase.from("guides").update({ notes }).eq("id", guide_id);
 
   revalidatePath(`/materias/${subject_id}`);
 }

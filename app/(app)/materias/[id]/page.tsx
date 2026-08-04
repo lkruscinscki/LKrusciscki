@@ -4,10 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, getWeekStart, daysBetween } from "@/lib/game-day";
 import { BackLink } from "../../back-link";
 import {
-  addGuide,
   markExercisesResolved,
-  addStudySession,
-  addExam,
+  updateGuideNotes,
 } from "./actions";
 
 export default async function SubjectDetailPage({
@@ -33,7 +31,7 @@ export default async function SubjectDetailPage({
     notFound();
   }
 
-  const [{ data: guides }, { data: weekLogs }, { data: recentSessions }, { data: exams }] =
+  const [{ data: guides }, { data: weekLogs }, { data: exams }] =
     await Promise.all([
       supabase
         .from("guides")
@@ -46,12 +44,6 @@ export default async function SubjectDetailPage({
         .eq("subject_id", id)
         .gte("game_date", weekStart),
       supabase
-        .from("study_sessions")
-        .select("*")
-        .eq("subject_id", id)
-        .order("date", { ascending: false })
-        .limit(5),
-      supabase
         .from("exams")
         .select("*")
         .eq("subject_id", id)
@@ -62,7 +54,7 @@ export default async function SubjectDetailPage({
     (sum, l) => sum + l.exercises_added,
     0,
   );
-  const openGuides = (guides ?? []).filter((g) => !g.completed_at);
+  const upcomingExams = (exams ?? []).filter((e) => e.date >= today).slice(0, 2);
 
   return (
     <div className="flex flex-col gap-6 p-4">
@@ -93,9 +85,27 @@ export default async function SubjectDetailPage({
         </p>
       </section>
 
+      {upcomingExams.length > 0 && (
+        <section className="card">
+          <ul className="flex flex-col gap-1 text-sm">
+            {upcomingExams.map((exam) => {
+              const days = daysBetween(today, exam.date);
+              return (
+                <li key={exam.id} className="flex items-center justify-between">
+                  <span>📝 {exam.name}</span>
+                  <span className="text-accent">
+                    {days === 0 ? "hoy" : `Faltan ${days}d`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       <section className="flex flex-col gap-2">
         <h2 className="font-medium">Guías</h2>
-        {guides && guides.length > 0 ? (
+        {guides && guides.length > 0 && (
           <ul className="flex flex-col gap-2">
             {guides.map((guide) => (
               <li key={guide.id} className="card">
@@ -108,11 +118,6 @@ export default async function SubjectDetailPage({
                     {guide.completed_exercises}/{guide.total_exercises}
                   </span>
                 </div>
-                {guide.target_date && (
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Objetivo: {guide.target_date}
-                  </p>
-                )}
                 {!guide.completed_at && (
                   <form
                     action={markExercisesResolved}
@@ -133,41 +138,41 @@ export default async function SubjectDetailPage({
                     </button>
                   </form>
                 )}
+                <form
+                  action={updateGuideNotes}
+                  className="mt-2 flex flex-col gap-2"
+                >
+                  <input type="hidden" name="guide_id" value={guide.id} />
+                  <input type="hidden" name="subject_id" value={id} />
+                  <textarea
+                    name="notes"
+                    defaultValue={guide.notes ?? ""}
+                    placeholder="Notas (opcional)"
+                    rows={2}
+                    className="input text-sm"
+                  />
+                  <button
+                    type="submit"
+                    className="btn-secondary self-end text-sm"
+                  >
+                    Guardar nota
+                  </button>
+                </form>
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-sm text-zinc-400">
-            Todavía no cargaste ninguna guía.
-          </p>
         )}
-
-        <form
-          action={addGuide}
-          className="card flex flex-col gap-2 text-sm"
+        <Link
+          href={`/materias/${id}/guias/nueva`}
+          className="btn-secondary text-center"
         >
-          <input type="hidden" name="subject_id" value={id} />
-          <input name="name" placeholder="Nombre de la guía" required className="input" />
-          <div className="flex gap-2">
-            <input
-              type="number"
-              name="total_exercises"
-              placeholder="Total de ejercicios"
-              min={1}
-              required
-              className="input flex-1"
-            />
-            <input type="date" name="target_date" className="input flex-1" />
-          </div>
-          <button type="submit" className="btn-secondary self-end">
-            Agregar guía
-          </button>
-        </form>
+          + Agregar guía
+        </Link>
       </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="font-medium">Parciales</h2>
-        {exams && exams.length > 0 ? (
+        {exams && exams.length > 0 && (
           <ul className="flex flex-col gap-2">
             {exams.map((exam) => {
               const isPast = exam.date < today;
@@ -192,82 +197,14 @@ export default async function SubjectDetailPage({
               );
             })}
           </ul>
-        ) : (
-          <p className="text-sm text-zinc-400">
-            Todavía no cargaste parciales.
-          </p>
         )}
-
-        <form action={addExam} className="card flex flex-col gap-2 text-sm">
-          <input type="hidden" name="subject_id" value={id} />
-          <input
-            name="name"
-            placeholder="Nombre (ej. Primer parcial)"
-            required
-            className="input"
-          />
-          <input type="date" name="date" required className="input" />
-          <button type="submit" className="btn-secondary self-end">
-            Agregar parcial
-          </button>
-        </form>
+        <Link
+          href={`/materias/${id}/parciales/nueva`}
+          className="btn-secondary text-center"
+        >
+          + Agregar parcial
+        </Link>
       </section>
-
-      <section className="card">
-        <h2 className="mb-2 font-medium">Nueva sesión de estudio</h2>
-        <form action={addStudySession} className="flex flex-col gap-2">
-          <input type="hidden" name="subject_id" value={id} />
-          <input
-            type="number"
-            name="duration_minutes"
-            placeholder="Duración (min)"
-            min={1}
-            required
-            className="input"
-          />
-          {openGuides.length > 0 && (
-            <select name="guide_id" defaultValue="" className="input">
-              <option value="">Sin guía asociada</option>
-              {openGuides.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <input name="topic" placeholder="Tema (opcional)" className="input" />
-          <textarea
-            name="notes"
-            placeholder="Notas (opcional)"
-            rows={3}
-            className="input"
-          />
-          <button type="submit" className="btn-primary self-end">
-            Guardar sesión
-          </button>
-        </form>
-      </section>
-
-      {recentSessions && recentSessions.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-medium">Últimas sesiones</h2>
-          <ul className="flex flex-col gap-2">
-            {recentSessions.map((s) => (
-              <li key={s.id} className="card text-sm">
-                <div className="flex justify-between">
-                  <span>{s.date}{s.topic ? ` · ${s.topic}` : ""}</span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    {s.duration_minutes} min
-                  </span>
-                </div>
-                {s.notes && (
-                  <p className="text-zinc-500 dark:text-zinc-400">{s.notes}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }
