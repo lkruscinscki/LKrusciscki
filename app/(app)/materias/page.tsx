@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, getWeekStart } from "@/lib/game-day";
-import { addQuarter, addSubject } from "./actions";
+import { BackLink } from "../back-link";
 
 function semaforoEmoji(progress: number, goal: number): string {
   if (progress >= goal) return "🟢";
@@ -30,6 +30,10 @@ export default async function MateriasPage() {
         .gte("game_date", weekStart),
     ]);
 
+  const activeQuarter = (quarters ?? []).find(
+    (q) => q.start_date <= today && today <= q.end_date,
+  );
+
   const weekProgressBySubject = new Map<string, number>();
   for (const log of weekLogs ?? []) {
     weekProgressBySubject.set(
@@ -40,7 +44,31 @@ export default async function MateriasPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
+      <BackLink href="/inicio" />
       <h1 className="text-2xl font-semibold">Materias</h1>
+
+      <section className="card flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            Cuatrimestre actual
+          </p>
+          {activeQuarter ? (
+            <>
+              <p className="text-lg font-semibold">{activeQuarter.name}</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Vigente hasta {activeQuarter.end_date}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              No hay ninguno vigente
+            </p>
+          )}
+        </div>
+        <Link href="/materias/cuatrimestre" className="text-sm text-accent">
+          modificar
+        </Link>
+      </section>
 
       <section className="flex flex-col gap-2">
         {subjects && subjects.length > 0 ? (
@@ -76,77 +104,12 @@ export default async function MateriasPage() {
           </ul>
         ) : (
           <p className="text-sm text-zinc-400">
-            Todavía no cargaste ninguna materia.
+            Todavía no cargaste ninguna materia.{" "}
+            <Link href="/materias/cuatrimestre" className="text-accent">
+              Agregar
+            </Link>
           </p>
         )}
-      </section>
-
-      {quarters && quarters.length > 0 ? (
-        <section className="card">
-          <h2 className="mb-2 font-medium">Nueva materia</h2>
-          <form action={addSubject} className="flex flex-col gap-2">
-            <input name="name" placeholder="Nombre" required className="input" />
-            <select name="quarter_id" required defaultValue={quarters[0].id} className="input">
-              {quarters.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.name}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <label className="flex flex-1 items-center gap-2 text-sm">
-                Color
-                <input
-                  type="color"
-                  name="color"
-                  defaultValue="#ea580c"
-                  className="h-10 w-14 rounded border border-black/20 dark:border-white/20"
-                />
-              </label>
-              <input
-                type="number"
-                name="weekly_exercise_goal"
-                placeholder="Objetivo semanal"
-                min={1}
-                defaultValue={10}
-                className="input flex-1"
-              />
-            </div>
-            <button type="submit" className="btn-primary self-end">
-              Crear materia
-            </button>
-          </form>
-        </section>
-      ) : (
-        <p className="text-sm text-zinc-400">
-          Creá un cuatrimestre primero para poder agregar materias.
-        </p>
-      )}
-
-      <section className="card">
-        <h2 className="mb-2 font-medium">Cuatrimestres</h2>
-        {quarters && quarters.length > 0 && (
-          <ul className="mb-3 flex flex-col gap-1 text-sm">
-            {quarters.map((q) => (
-              <li key={q.id} className="flex justify-between">
-                <span>{q.name}</span>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  {q.start_date} — {q.end_date}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <form action={addQuarter} className="flex flex-col gap-2 border-t border-black/10 pt-3 dark:border-white/10">
-          <input name="name" placeholder="Nombre (ej. 2026-2)" required className="input" />
-          <div className="flex gap-2">
-            <input type="date" name="start_date" required className="input flex-1" />
-            <input type="date" name="end_date" required className="input flex-1" />
-          </div>
-          <button type="submit" className="btn-secondary self-end">
-            Agregar cuatrimestre
-          </button>
-        </form>
       </section>
     </div>
   );

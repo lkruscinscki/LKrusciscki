@@ -14,6 +14,25 @@ export async function addQuarter(formData: FormData) {
   await supabase.from("quarters").insert({ name, start_date, end_date });
 
   revalidatePath("/materias");
+  revalidatePath("/materias/cuatrimestre");
+}
+
+export async function updateQuarter(formData: FormData) {
+  const supabase = await createClient();
+  const id = formData.get("id") as string;
+  const name = ((formData.get("name") as string) ?? "").trim();
+  const start_date = formData.get("start_date") as string;
+  const end_date = formData.get("end_date") as string;
+
+  if (!id || !name || !start_date || !end_date) return;
+
+  await supabase
+    .from("quarters")
+    .update({ name, start_date, end_date })
+    .eq("id", id);
+
+  revalidatePath("/materias");
+  revalidatePath("/materias/cuatrimestre");
 }
 
 export async function addSubject(formData: FormData) {
