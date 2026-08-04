@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, addDays, computeStreak } from "@/lib/game-day";
 import { getMonthGrid, getMonthLabel, getMonthRange } from "@/lib/calendar";
 import { StatTile } from "../stat-tile";
+import { logout } from "@/app/login/actions";
 
 const STREAK_LOOKBACK_DAYS = 60;
 const WEEKDAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
@@ -192,6 +193,17 @@ export default async function InicioPage() {
             <StatTile label="Agua promedio/día" value={`${avgWater.toFixed(1)} bot.`} />
           )}
         </div>
+      </section>
+
+      <section className="card">
+        <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+          {user!.email}
+        </p>
+        <form action={logout}>
+          <button type="submit" className="btn-secondary w-full">
+            Cerrar sesión
+          </button>
+        </form>
       </section>
     </div>
   );

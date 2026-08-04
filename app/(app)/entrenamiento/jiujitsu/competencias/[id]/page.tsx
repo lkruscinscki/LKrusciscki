@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, daysBetween } from "@/lib/game-day";
 import { addMatch } from "../actions";
+import { BackLink } from "../../back-link";
 
 const RESULT_LABELS: Record<string, string> = {
   win: "Victoria",
@@ -52,6 +53,7 @@ export default async function CompetitionDetailPage({
 
   return (
     <div className="flex flex-col gap-6 p-4">
+      <BackLink href="/entrenamiento/jiujitsu/competencias" />
       <div>
         <h1 className="text-2xl font-semibold">{competition.event_name}</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMonthLabel } from "@/lib/calendar";
 import { StatTile } from "../../../stat-tile";
+import { BackLink } from "../back-link";
 
 export default async function JiujitsuEstadisticasPage() {
   const supabase = await createClient();
@@ -49,6 +50,7 @@ export default async function JiujitsuEstadisticasPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
+      <BackLink href="/entrenamiento/jiujitsu" />
       <h1 className="text-2xl font-semibold">Estadísticas y notas</h1>
 
       <section className="card">

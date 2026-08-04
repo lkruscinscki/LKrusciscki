@@ -1,8 +1,10 @@
 import { addJiujitsuSession } from "./actions";
+import { BackLink } from "../back-link";
 
 export default function NuevoEntrenamientoPage() {
   return (
     <div className="flex flex-col gap-6 p-4">
+      <BackLink href="/entrenamiento/jiujitsu" />
       <h1 className="text-2xl font-semibold">Nuevo entrenamiento</h1>
 
       <form action={addJiujitsuSession} className="flex flex-col gap-3">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, daysBetween } from "@/lib/game-day";
 import { addCompetition } from "./actions";
+import { BackLink } from "../back-link";
 
 export default async function CompetenciasPage() {
   const supabase = await createClient();
@@ -20,6 +21,7 @@ export default async function CompetenciasPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
+      <BackLink href="/entrenamiento/jiujitsu" />
       <h1 className="text-2xl font-semibold">Competencias</h1>
 
       {upcoming.length > 0 && (
