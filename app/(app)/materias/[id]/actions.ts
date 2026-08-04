@@ -1,10 +1,59 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate } from "@/lib/game-day";
 import { grantXp } from "@/lib/xp";
 import { XP } from "@/lib/game-config";
+
+export async function updateSubject(formData: FormData) {
+  const supabase = await createClient();
+  const id = formData.get("id") as string;
+  const name = ((formData.get("name") as string) ?? "").trim();
+  const color = (formData.get("color") as string) || "#ea580c";
+  const quarter_id = formData.get("quarter_id") as string;
+  const weeklyGoalRaw = formData.get("weekly_exercise_goal");
+  const weekly_exercise_goal = weeklyGoalRaw ? Number(weeklyGoalRaw) : 10;
+
+  if (!id || !name || !quarter_id) return;
+
+  await supabase
+    .from("subjects")
+    .update({ name, color, quarter_id, weekly_exercise_goal })
+    .eq("id", id);
+
+  revalidatePath(`/materias/${id}`);
+  revalidatePath("/materias");
+  revalidatePath("/inicio");
+  redirect(`/materias/${id}`);
+}
+
+export async function deleteSubject(formData: FormData) {
+  const supabase = await createClient();
+  const id = formData.get("id") as string;
+  if (!id) return;
+
+  await supabase.from("subjects").delete().eq("id", id);
+
+  revalidatePath("/materias");
+  revalidatePath("/inicio");
+  redirect("/materias");
+}
+
+export async function addExam(formData: FormData) {
+  const supabase = await createClient();
+  const subject_id = formData.get("subject_id") as string;
+  const name = ((formData.get("name") as string) ?? "").trim();
+  const date = formData.get("date") as string;
+
+  if (!subject_id || !name || !date) return;
+
+  await supabase.from("exams").insert({ subject_id, name, date });
+
+  revalidatePath(`/materias/${subject_id}`);
+  revalidatePath("/inicio");
+}
 
 export async function addGuide(formData: FormData) {
   const supabase = await createClient();

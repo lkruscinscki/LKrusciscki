@@ -1,8 +1,14 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getTodayGameDate, getWeekStart } from "@/lib/game-day";
+import { getTodayGameDate, getWeekStart, daysBetween } from "@/lib/game-day";
 import { BackLink } from "../../back-link";
-import { addGuide, markExercisesResolved, addStudySession } from "./actions";
+import {
+  addGuide,
+  markExercisesResolved,
+  addStudySession,
+  addExam,
+} from "./actions";
 
 export default async function SubjectDetailPage({
   params,
@@ -27,7 +33,7 @@ export default async function SubjectDetailPage({
     notFound();
   }
 
-  const [{ data: guides }, { data: weekLogs }, { data: recentSessions }] =
+  const [{ data: guides }, { data: weekLogs }, { data: recentSessions }, { data: exams }] =
     await Promise.all([
       supabase
         .from("guides")
@@ -45,6 +51,11 @@ export default async function SubjectDetailPage({
         .eq("subject_id", id)
         .order("date", { ascending: false })
         .limit(5),
+      supabase
+        .from("exams")
+        .select("*")
+        .eq("subject_id", id)
+        .order("date"),
     ]);
 
   const weekProgress = (weekLogs ?? []).reduce(
@@ -62,12 +73,15 @@ export default async function SubjectDetailPage({
           className="h-4 w-4 shrink-0 rounded-full"
           style={{ backgroundColor: subject.color }}
         />
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold">{subject.name}</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {subject.quarters?.name}
           </p>
         </div>
+        <Link href={`/materias/${id}/editar`} className="text-sm text-accent">
+          editar
+        </Link>
       </div>
 
       <section className="card">
@@ -147,6 +161,54 @@ export default async function SubjectDetailPage({
           </div>
           <button type="submit" className="btn-secondary self-end">
             Agregar guía
+          </button>
+        </form>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-medium">Parciales</h2>
+        {exams && exams.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {exams.map((exam) => {
+              const isPast = exam.date < today;
+              const days = daysBetween(today, exam.date);
+              return (
+                <li
+                  key={exam.id}
+                  className="card flex items-center justify-between text-sm"
+                >
+                  <div>
+                    <p className="font-medium">{exam.name}</p>
+                    <p className="text-zinc-500 dark:text-zinc-400">
+                      {exam.date}
+                    </p>
+                  </div>
+                  {!isPast && (
+                    <span className="text-accent">
+                      {days === 0 ? "hoy" : `${days}d`}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-zinc-400">
+            Todavía no cargaste parciales.
+          </p>
+        )}
+
+        <form action={addExam} className="card flex flex-col gap-2 text-sm">
+          <input type="hidden" name="subject_id" value={id} />
+          <input
+            name="name"
+            placeholder="Nombre (ej. Primer parcial)"
+            required
+            className="input"
+          />
+          <input type="date" name="date" required className="input" />
+          <button type="submit" className="btn-secondary self-end">
+            Agregar parcial
           </button>
         </form>
       </section>

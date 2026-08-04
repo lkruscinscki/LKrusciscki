@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getTodayGameDate, getWeekStart } from "@/lib/game-day";
+import { getTodayGameDate, getWeekStart, daysBetween } from "@/lib/game-day";
 import { getMonthGrid, getMonthLabel, getMonthRange } from "@/lib/calendar";
 import { StatTile } from "../stat-tile";
 import { logout } from "@/app/login/actions";
@@ -45,6 +45,8 @@ export default async function InicioPage() {
     { data: waterMonth },
     { data: subjects },
     { data: weekExerciseLogs },
+    { data: upcomingExams },
+    { data: upcomingCompetitions },
     { streakDays, multiplier },
     pillarTotals,
     xpToday,
@@ -94,6 +96,18 @@ export default async function InicioPage() {
       .from("exercise_progress_logs")
       .select("subject_id, exercises_added")
       .gte("game_date", weekStart),
+    supabase
+      .from("exams")
+      .select("*, subjects(name)")
+      .gte("date", today)
+      .order("date")
+      .limit(5),
+    supabase
+      .from("competitions")
+      .select("*")
+      .gte("date", today)
+      .order("date")
+      .limit(5),
     getCurrentStreak(supabase, today),
     getPillarXpTotals(supabase),
     getXpEarnedOnDate(supabase, today),
@@ -120,6 +134,23 @@ export default async function InicioPage() {
   }));
   const overallLevel =
     levels.reduce((sum, l) => sum + l.level, 0) / levels.length;
+
+  const upcomingEvents = [
+    ...(upcomingExams ?? []).map((e) => ({
+      id: `exam-${e.id}`,
+      icon: "📝",
+      label: `${e.name} · ${e.subjects?.name ?? ""}`,
+      date: e.date,
+    })),
+    ...(upcomingCompetitions ?? []).map((c) => ({
+      id: `comp-${c.id}`,
+      icon: "🏆",
+      label: c.event_name,
+      date: c.date,
+    })),
+  ]
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+    .slice(0, 4);
 
   const weekProgressBySubject = new Map<string, number>();
   for (const log of weekExerciseLogs ?? []) {
@@ -183,6 +214,27 @@ export default async function InicioPage() {
           <p className="text-3xl font-semibold">{Math.round(xpToday)}</p>
         </section>
       </div>
+
+      {upcomingEvents.length > 0 && (
+        <section className="card">
+          <h2 className="mb-3 font-medium">Próximos eventos</h2>
+          <ul className="flex flex-col gap-2 text-sm">
+            {upcomingEvents.map((e) => {
+              const days = daysBetween(today, e.date);
+              return (
+                <li key={e.id} className="flex items-center justify-between">
+                  <span>
+                    {e.icon} {e.label}
+                  </span>
+                  <span className="text-accent">
+                    {days === 0 ? "hoy" : `Faltan ${days}d`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="card">
         <div className="mb-3 flex items-center justify-between">
