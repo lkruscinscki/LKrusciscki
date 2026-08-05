@@ -39,5 +39,5 @@ export async function addCrossTrainingSession(formData: FormData) {
   }
 
   revalidatePath(`/entrenamiento/${slug}`);
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }

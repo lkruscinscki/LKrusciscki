@@ -678,6 +678,30 @@ export type Database = {
         }
         Relationships: []
       }
+      stretching_logs: {
+        Row: {
+          created_at: string
+          date: string
+          duration_minutes: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          duration_minutes: number
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          duration_minutes?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           created_at: string
@@ -767,6 +791,27 @@ export type Database = {
           },
         ]
       }
+      supplement_logs: {
+        Row: {
+          created_at: string
+          game_date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_date: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           completed: boolean
@@ -801,16 +846,19 @@ export type Database = {
         Row: {
           created_at: string
           day_cutoff_hour: number
+          stretching_weekly_goal_minutes: number
           user_id: string
         }
         Insert: {
           created_at?: string
           day_cutoff_hour?: number
+          stretching_weekly_goal_minutes?: number
           user_id: string
         }
         Update: {
           created_at?: string
           day_cutoff_hour?: number
+          stretching_weekly_goal_minutes?: number
           user_id?: string
         }
         Relationships: []

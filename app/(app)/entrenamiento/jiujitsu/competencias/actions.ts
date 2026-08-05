@@ -81,5 +81,5 @@ export async function addMatch(formData: FormData) {
   }
 
   revalidatePath(`/entrenamiento/jiujitsu/competencias/${competition_id}`);
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }

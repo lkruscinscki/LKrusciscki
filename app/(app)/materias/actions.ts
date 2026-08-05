@@ -53,5 +53,5 @@ export async function addSubject(formData: FormData) {
   });
 
   revalidatePath("/materias");
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }

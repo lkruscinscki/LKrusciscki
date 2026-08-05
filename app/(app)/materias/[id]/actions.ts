@@ -25,7 +25,7 @@ export async function updateSubject(formData: FormData) {
 
   revalidatePath(`/materias/${id}`);
   revalidatePath("/materias");
-  revalidatePath("/inicio");
+  revalidatePath("/");
   redirect(`/materias/${id}`);
 }
 
@@ -37,7 +37,7 @@ export async function deleteSubject(formData: FormData) {
   await supabase.from("subjects").delete().eq("id", id);
 
   revalidatePath("/materias");
-  revalidatePath("/inicio");
+  revalidatePath("/");
   redirect("/materias");
 }
 
@@ -52,7 +52,7 @@ export async function addExam(formData: FormData) {
   await supabase.from("exams").insert({ subject_id, name, date });
 
   revalidatePath(`/materias/${subject_id}`);
-  revalidatePath("/inicio");
+  revalidatePath("/");
   redirect(`/materias/${subject_id}`);
 }
 
@@ -68,7 +68,7 @@ export async function updateExam(formData: FormData) {
   await supabase.from("exams").update({ name, date }).eq("id", exam_id);
 
   revalidatePath(`/materias/${subject_id}`);
-  revalidatePath("/inicio");
+  revalidatePath("/");
   redirect(`/materias/${subject_id}`);
 }
 
@@ -81,7 +81,7 @@ export async function deleteExam(formData: FormData) {
   await supabase.from("exams").delete().eq("id", exam_id);
 
   revalidatePath(`/materias/${subject_id}`);
-  revalidatePath("/inicio");
+  revalidatePath("/");
   redirect(`/materias/${subject_id}`);
 }
 
@@ -219,7 +219,7 @@ export async function saveGuideProgress(formData: FormData) {
 
   revalidatePath(`/materias/${subject_id}`);
   revalidatePath("/materias");
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }
 
 export async function addStudySession(formData: FormData) {
@@ -271,5 +271,5 @@ export async function addStudySession(formData: FormData) {
   }
 
   revalidatePath(`/materias/${subject_id}`);
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }

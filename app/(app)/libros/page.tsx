@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "../back-link";
-import { addBook } from "../actions";
+import { addBook } from "../habitos/actions";
 
 export default async function LibrosPage() {
   const supabase = await createClient();
@@ -21,7 +21,7 @@ export default async function LibrosPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <BackLink href="/" />
+      <BackLink href="/habitos" />
       <h1 className="text-2xl font-semibold">Libros</h1>
 
       <section className="flex flex-col gap-2">

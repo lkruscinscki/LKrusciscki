@@ -36,6 +36,8 @@ export const XP = {
     creativeBlock: 25,
     chess: 10,
     sleep: 10,
+    stretching: 10,
+    supplements: 10,
   },
 } as const;
 

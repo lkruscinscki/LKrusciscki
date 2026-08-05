@@ -42,8 +42,8 @@ export async function logMeditation() {
     dedupe: true,
   });
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
 }
 
 export async function logJournaling() {
@@ -65,8 +65,8 @@ export async function logJournaling() {
     dedupe: true,
   });
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
 }
 
 export async function addBook(formData: FormData) {
@@ -84,7 +84,7 @@ export async function addBook(formData: FormData) {
 
   await supabase.from("books").insert({ title, total_pages, starting_pages });
 
-  revalidatePath("/");
+  revalidatePath("/habitos");
   revalidatePath("/libros");
 }
 
@@ -103,7 +103,7 @@ export async function updateBook(formData: FormData) {
     .update({ title, total_pages, status: finished ? "finished" : "reading" })
     .eq("id", book_id);
 
-  revalidatePath("/");
+  revalidatePath("/habitos");
   revalidatePath("/libros");
   redirect("/libros");
 }
@@ -115,7 +115,7 @@ export async function deleteBook(formData: FormData) {
 
   await supabase.from("books").delete().eq("id", book_id);
 
-  revalidatePath("/");
+  revalidatePath("/habitos");
   revalidatePath("/libros");
   redirect("/libros");
 }
@@ -176,8 +176,8 @@ export async function saveReadingLog(formData: FormData) {
     await revokeXp(supabase, { sourceType: "reading", gameDate });
   }
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
 }
 
 export async function saveCreativeBlock(formData: FormData) {
@@ -205,8 +205,8 @@ export async function saveCreativeBlock(formData: FormData) {
     });
   }
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
 }
 
 export async function logChess() {
@@ -225,8 +225,8 @@ export async function logChess() {
     dedupe: true,
   });
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
 }
 
 export async function undoChess() {
@@ -236,8 +236,8 @@ export async function undoChess() {
   await supabase.from("chess_sessions").delete().eq("game_date", gameDate);
   await revokeXp(supabase, { sourceType: "chess", gameDate });
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
 }
 
 export async function incrementWater() {
@@ -259,7 +259,7 @@ export async function incrementWater() {
       { onConflict: "user_id,game_date" },
     );
 
-  revalidatePath("/");
+  revalidatePath("/habitos");
 }
 
 export async function decrementWater() {
@@ -281,7 +281,7 @@ export async function decrementWater() {
       { onConflict: "user_id,game_date" },
     );
 
-  revalidatePath("/");
+  revalidatePath("/habitos");
 }
 
 export async function saveSleep(formData: FormData) {
@@ -308,6 +308,70 @@ export async function saveSleep(formData: FormData) {
     await revokeXp(supabase, { sourceType: "sleep", gameDate });
   }
 
+  revalidatePath("/habitos");
   revalidatePath("/");
-  revalidatePath("/inicio");
+}
+
+export async function logSupplements() {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+
+  await supabase
+    .from("supplement_logs")
+    .upsert({ game_date: gameDate }, { onConflict: "user_id,game_date" });
+
+  await grantXp(supabase, {
+    pillar: "personal",
+    sourceType: "supplements",
+    baseXp: XP.personal.supplements,
+    gameDate,
+    dedupe: true,
+  });
+
+  revalidatePath("/habitos");
+  revalidatePath("/");
+}
+
+export async function logStretching(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const gameDate = await getTodayGameDate(supabase, user.id);
+  const durationRaw = formData.get("duration_minutes");
+  const duration_minutes = durationRaw ? Number(durationRaw) : 0;
+
+  if (duration_minutes <= 0) return;
+
+  const { data: log } = await supabase
+    .from("stretching_logs")
+    .insert({ date: gameDate, duration_minutes })
+    .select("id")
+    .single();
+
+  if (log) {
+    await grantXp(supabase, {
+      pillar: "personal",
+      sourceType: "stretching",
+      sourceId: log.id,
+      baseXp: XP.personal.stretching,
+      gameDate,
+    });
+  }
+
+  revalidatePath("/habitos");
+  revalidatePath("/");
+}
+
+export async function updateStretchingGoal(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const goalRaw = formData.get("goal_minutes");
+  const goal_minutes = goalRaw ? Number(goalRaw) : 0;
+
+  if (goal_minutes <= 0) return;
+
+  await supabase
+    .from("user_settings")
+    .update({ stretching_weekly_goal_minutes: goal_minutes })
+    .eq("user_id", user.id);
+
+  revalidatePath("/habitos");
+  redirect("/habitos");
 }

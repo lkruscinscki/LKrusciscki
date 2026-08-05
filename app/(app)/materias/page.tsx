@@ -44,7 +44,7 @@ export default async function MateriasPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <BackLink href="/inicio" />
+      <BackLink href="/" />
       <h1 className="text-2xl font-semibold">Materias</h1>
 
       <section className="card flex items-center justify-between">

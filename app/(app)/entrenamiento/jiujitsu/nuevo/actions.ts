@@ -61,5 +61,5 @@ export async function addJiujitsuSession(formData: FormData) {
 
   revalidatePath("/entrenamiento/jiujitsu/nuevo");
   revalidatePath("/entrenamiento/jiujitsu/estadisticas");
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }

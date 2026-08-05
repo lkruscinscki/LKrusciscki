@@ -60,5 +60,5 @@ export async function addProjectLog(formData: FormData) {
   });
 
   revalidatePath("/proyectos");
-  revalidatePath("/inicio");
+  revalidatePath("/");
 }

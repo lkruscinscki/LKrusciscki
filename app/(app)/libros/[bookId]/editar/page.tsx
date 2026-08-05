@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "../../../back-link";
 import { ConfirmSubmitButton } from "../../../confirm-submit-button";
-import { updateBook, deleteBook } from "../../../actions";
+import { updateBook, deleteBook } from "../../../habitos/actions";
 
 export default async function EditBookPage({
   params,
