@@ -276,6 +276,11 @@ export default async function InicioPage() {
         </div>
       </section>
 
+      <Link href="/stats" className="card flex items-center justify-between">
+        <span className="font-medium">📊 Estadísticas</span>
+        <span className="text-accent">ver más →</span>
+      </Link>
+
       <section className="card">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-medium">Materias</h2>

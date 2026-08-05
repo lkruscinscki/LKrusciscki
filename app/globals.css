@@ -5,6 +5,20 @@
   --foreground: #171717;
   --accent: #dc2626;
   --card-border: rgba(0, 0, 0, 0.1);
+
+  --chart-pillar-academico: #2a78d6;
+  --chart-pillar-deportivo: #eb6834;
+  --chart-pillar-profesional: #1baf7a;
+  --chart-pillar-personal: #eda100;
+  --chart-period-previous: #6da7ec;
+  --chart-period-current: #1c5cab;
+  --chart-jiujitsu-achieved: #2a78d6;
+  --chart-jiujitsu-received: #eb6834;
+  --chart-reading-line: #2a78d6;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-muted: #898781;
+  --chart-delta-good: #006300;
 }
 
 @theme inline {
@@ -21,6 +35,17 @@
     --foreground: #ededed;
     --accent: #f87171;
     --card-border: rgba(255, 255, 255, 0.1);
+
+    --chart-pillar-academico: #3987e5;
+    --chart-pillar-deportivo: #d95926;
+    --chart-pillar-profesional: #199e70;
+    --chart-pillar-personal: #c98500;
+    --chart-jiujitsu-achieved: #3987e5;
+    --chart-jiujitsu-received: #d95926;
+    --chart-reading-line: #3987e5;
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+    --chart-delta-good: #0ca30c;
   }
 }
 

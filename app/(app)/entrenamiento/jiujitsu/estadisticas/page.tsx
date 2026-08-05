@@ -1,15 +1,32 @@
 import { createClient } from "@/lib/supabase/server";
-import { getMonthLabel } from "@/lib/calendar";
+import { getTodayGameDate } from "@/lib/game-day";
+import { getMonthlyJiujitsuSubmissions } from "@/lib/stats";
 import { StatTile } from "../../../stat-tile";
 import { BackLink } from "../../../back-link";
+import { SubmissionsChart } from "../submissions-chart";
+
+function formatMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  return new Intl.DateTimeFormat("es-AR", {
+    month: "short",
+    year: "2-digit",
+    timeZone: "UTC",
+  }).format(date);
+}
 
 export default async function JiujitsuEstadisticasPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data: sessions } = await supabase
-    .from("jiujitsu_sessions")
-    .select("*")
-    .order("date", { ascending: false });
+  const today = await getTodayGameDate(supabase, user!.id);
+
+  const [{ data: sessions }, monthlySubmissions] = await Promise.all([
+    supabase.from("jiujitsu_sessions").select("*").order("date", { ascending: false }),
+    getMonthlyJiujitsuSubmissions(supabase, today),
+  ]);
 
   const all = sessions ?? [];
 
@@ -24,24 +41,13 @@ export default async function JiujitsuEstadisticasPage() {
         ? "∞"
         : "—";
 
-  const monthlyMap = new Map<
-    string,
-    { sessions: number; achieved: number; received: number }
-  >();
-  for (const s of all) {
-    const monthKey = s.date.slice(0, 7);
-    const entry = monthlyMap.get(monthKey) ?? {
-      sessions: 0,
-      achieved: 0,
-      received: 0,
-    };
-    entry.sessions += 1;
-    entry.achieved += s.submissions_achieved;
-    entry.received += s.submissions_received;
-    monthlyMap.set(monthKey, entry);
-  }
-  const monthlyRows = Array.from(monthlyMap.entries()).sort((a, b) =>
-    a[0] < b[0] ? 1 : -1,
+  const submissionsChartData = monthlySubmissions.map((r) => ({
+    monthLabel: formatMonthLabel(r.month),
+    achieved: r.achieved,
+    received: r.received,
+  }));
+  const hasSubmissionsData = monthlySubmissions.some(
+    (r) => r.achieved > 0 || r.received > 0,
   );
 
   const sessionsWithNotes = all.filter(
@@ -64,27 +70,14 @@ export default async function JiujitsuEstadisticasPage() {
         </div>
       </section>
 
-      {monthlyRows.length > 0 && (
-        <section className="card">
-          <h2 className="mb-3 font-medium">Mes a mes</h2>
-          <div className="flex flex-col gap-2 text-sm">
-            {monthlyRows.map(([month, data]) => (
-              <div
-                key={month}
-                className="flex items-center justify-between border-b border-black/5 pb-2 last:border-0 dark:border-white/5"
-              >
-                <span className="font-medium">
-                  {getMonthLabel(`${month}-01`)}
-                </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  {data.sessions} sesion{data.sessions === 1 ? "" : "es"} ·{" "}
-                  {data.achieved} log. · {data.received} recib.
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <section className="card">
+        <h2 className="mb-3 font-medium">Sumisiones por mes</h2>
+        {hasSubmissionsData ? (
+          <SubmissionsChart data={submissionsChartData} />
+        ) : (
+          <p className="text-sm text-zinc-400">Todavía no hay sumisiones registradas.</p>
+        )}
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="font-medium">Notas de sesiones</h2>
