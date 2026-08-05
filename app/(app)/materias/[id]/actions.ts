@@ -135,20 +135,7 @@ export async function deleteGuide(formData: FormData) {
   redirect(`/materias/${subject_id}`);
 }
 
-export async function updateGuideNotes(formData: FormData) {
-  const supabase = await createClient();
-  const guide_id = formData.get("guide_id") as string;
-  const subject_id = formData.get("subject_id") as string;
-  const notes = ((formData.get("notes") as string) ?? "").trim() || null;
-
-  if (!guide_id) return;
-
-  await supabase.from("guides").update({ notes }).eq("id", guide_id);
-
-  revalidatePath(`/materias/${subject_id}`);
-}
-
-export async function markExercisesResolved(formData: FormData) {
+export async function saveGuideProgress(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -157,10 +144,10 @@ export async function markExercisesResolved(formData: FormData) {
 
   const guide_id = formData.get("guide_id") as string;
   const subject_id = formData.get("subject_id") as string;
-  const exercisesRaw = formData.get("exercises_added");
-  const requestedExercises = exercisesRaw ? Number(exercisesRaw) : 0;
+  const requestedRaw = formData.get("completed_exercises");
+  const requestedCompleted = requestedRaw ? Number(requestedRaw) : 0;
 
-  if (!guide_id || !subject_id || requestedExercises <= 0) return;
+  if (!guide_id || !subject_id) return;
 
   const { data: guide } = await supabase
     .from("guides")
@@ -170,51 +157,64 @@ export async function markExercisesResolved(formData: FormData) {
 
   if (!guide) return;
 
-  const remaining = guide.total_exercises - guide.completed_exercises;
-  const exercisesAdded = Math.min(requestedExercises, remaining);
-  if (exercisesAdded <= 0) return;
-
-  const newCompleted = guide.completed_exercises + exercisesAdded;
-  const justCompleted = !guide.completed_at && newCompleted >= guide.total_exercises;
+  const clampedCompleted = Math.min(
+    Math.max(requestedCompleted, 0),
+    guide.total_exercises,
+  );
+  const delta = clampedCompleted - guide.completed_exercises;
+  const isNowComplete = clampedCompleted >= guide.total_exercises;
   const today = await getTodayGameDate(supabase, user.id);
 
   await supabase
     .from("guides")
     .update({
-      completed_exercises: newCompleted,
-      completed_at: justCompleted ? new Date().toISOString() : guide.completed_at,
+      completed_exercises: clampedCompleted,
+      completed_at: isNowComplete
+        ? (guide.completed_at ?? new Date().toISOString())
+        : null,
     })
     .eq("id", guide_id);
 
-  const { data: log } = await supabase
-    .from("exercise_progress_logs")
-    .insert({
-      guide_id,
-      subject_id,
-      exercises_added: exercisesAdded,
-      game_date: today,
-    })
-    .select("id")
-    .single();
+  if (delta > 0) {
+    const { data: log } = await supabase
+      .from("exercise_progress_logs")
+      .insert({
+        guide_id,
+        subject_id,
+        exercises_added: delta,
+        game_date: today,
+      })
+      .select("id")
+      .single();
 
-  if (log) {
-    await grantXp(supabase, {
-      pillar: "academico",
-      sourceType: "exercise_resolved",
-      sourceId: log.id,
-      baseXp: exercisesAdded * XP.academico.exerciseResolved,
-      gameDate: today,
-    });
+    if (log) {
+      await grantXp(supabase, {
+        pillar: "academico",
+        sourceType: "exercise_resolved",
+        sourceId: log.id,
+        baseXp: delta * XP.academico.exerciseResolved,
+        gameDate: today,
+      });
+    }
   }
 
-  if (justCompleted) {
-    await grantXp(supabase, {
-      pillar: "academico",
-      sourceType: "guide_completed",
-      sourceId: guide_id,
-      baseXp: XP.academico.guideCompleted,
-      gameDate: today,
-    });
+  if (isNowComplete && !guide.completed_at) {
+    const { data: existingBonus } = await supabase
+      .from("xp_events")
+      .select("id")
+      .eq("source_type", "guide_completed")
+      .eq("source_id", guide_id)
+      .maybeSingle();
+
+    if (!existingBonus) {
+      await grantXp(supabase, {
+        pillar: "academico",
+        sourceType: "guide_completed",
+        sourceId: guide_id,
+        baseXp: XP.academico.guideCompleted,
+        gameDate: today,
+      });
+    }
   }
 
   revalidatePath(`/materias/${subject_id}`);

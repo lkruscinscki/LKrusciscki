@@ -338,7 +338,6 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          notes: string | null
           subject_id: string
           target_date: string | null
           total_exercises: number
@@ -350,7 +349,6 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          notes?: string | null
           subject_id: string
           target_date?: string | null
           total_exercises: number
@@ -362,7 +360,6 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          notes?: string | null
           subject_id?: string
           target_date?: string | null
           total_exercises?: number

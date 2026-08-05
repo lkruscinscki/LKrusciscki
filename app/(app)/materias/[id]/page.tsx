@@ -3,10 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, getWeekStart, daysBetween } from "@/lib/game-day";
 import { BackLink } from "../../back-link";
-import {
-  markExercisesResolved,
-  updateGuideNotes,
-} from "./actions";
+import { saveGuideProgress } from "./actions";
+import { GuideExerciseGrid } from "./guide-exercise-grid";
 
 export default async function SubjectDetailPage({
   params,
@@ -124,46 +122,13 @@ export default async function SubjectDetailPage({
                     </Link>
                   </span>
                 </div>
-                {!guide.completed_at && (
-                  <form
-                    action={markExercisesResolved}
-                    className="mt-2 flex gap-2"
-                  >
-                    <input type="hidden" name="guide_id" value={guide.id} />
-                    <input type="hidden" name="subject_id" value={id} />
-                    <input
-                      type="number"
-                      name="exercises_added"
-                      placeholder="Ejercicios resueltos"
-                      min={1}
-                      required
-                      className="input flex-1"
-                    />
-                    <button type="submit" className="btn-primary">
-                      +
-                    </button>
-                  </form>
-                )}
-                <form
-                  action={updateGuideNotes}
-                  className="mt-2 flex flex-col gap-2"
-                >
-                  <input type="hidden" name="guide_id" value={guide.id} />
-                  <input type="hidden" name="subject_id" value={id} />
-                  <textarea
-                    name="notes"
-                    defaultValue={guide.notes ?? ""}
-                    placeholder="Notas (opcional)"
-                    rows={2}
-                    className="input text-sm"
-                  />
-                  <button
-                    type="submit"
-                    className="btn-secondary self-end text-sm"
-                  >
-                    Guardar nota
-                  </button>
-                </form>
+                <GuideExerciseGrid
+                  guideId={guide.id}
+                  subjectId={id}
+                  totalExercises={guide.total_exercises}
+                  completedExercises={guide.completed_exercises}
+                  action={saveGuideProgress}
+                />
               </li>
             ))}
           </ul>
