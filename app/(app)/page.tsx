@@ -3,9 +3,7 @@ import { getTodayGameDate, getWeekStart, addDays, computeStreak } from "@/lib/ga
 import { WEEKLY_GOALS } from "@/lib/game-config";
 import {
   logMeditation,
-  undoMeditation,
   logJournaling,
-  undoJournaling,
   addBook,
   saveReadingLog,
   saveCreativeBlock,
@@ -126,29 +124,17 @@ export default async function HabitosPage() {
           Meditación <StreakBadge days={meditationStreak} />
         </h2>
         {meditation ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-accent">
-              ✓ Hecho hoy
-              {meditation.duration_minutes
-                ? ` · ${meditation.duration_minutes} min`
-                : ""}
+          <div>
+            <div className="flex items-center gap-2 rounded-lg bg-black/5 px-4 py-2.5 text-sm text-zinc-500 dark:bg-white/5 dark:text-zinc-400">
+              <span className="text-accent">✓</span> Hecho hoy
+            </div>
+            <p className="mt-2 text-sm text-accent">
+              🧘 Un momento de calma en el día. Bien ahí.
             </p>
-            <form action={undoMeditation}>
-              <button type="submit" className="text-sm text-zinc-400 underline">
-                deshacer
-              </button>
-            </form>
           </div>
         ) : (
-          <form action={logMeditation} className="flex items-center gap-2">
-            <input
-              type="number"
-              name="duration_minutes"
-              placeholder="min (opcional)"
-              min={1}
-              className="input w-28"
-            />
-            <button type="submit" className="btn-primary flex-1">
+          <form action={logMeditation}>
+            <button type="submit" className="btn-primary w-full">
               Medité hoy
             </button>
           </form>
@@ -160,13 +146,13 @@ export default async function HabitosPage() {
           Journaling <StreakBadge days={journalStreak} />
         </h2>
         {journal ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-accent">✓ Hecho hoy</p>
-            <form action={undoJournaling}>
-              <button type="submit" className="text-sm text-zinc-400 underline">
-                deshacer
-              </button>
-            </form>
+          <div>
+            <div className="flex items-center gap-2 rounded-lg bg-black/5 px-4 py-2.5 text-sm text-zinc-500 dark:bg-white/5 dark:text-zinc-400">
+              <span className="text-accent">✓</span> Hecho hoy
+            </div>
+            <p className="mt-2 text-sm text-accent">
+              ✍️ Otro día documentado. Tu yo futuro te lo va a agradecer.
+            </p>
           </div>
         ) : (
           <form action={logJournaling}>

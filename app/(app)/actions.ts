@@ -22,16 +22,14 @@ function computeReadingXp(pagesRead: number): number {
   return Math.min(XP.personal.readingBase + bonus, XP.personal.readingCap);
 }
 
-export async function logMeditation(formData: FormData) {
+export async function logMeditation() {
   const { supabase, user } = await requireUser();
   const gameDate = await getTodayGameDate(supabase, user.id);
-  const durationRaw = formData.get("duration_minutes");
-  const duration_minutes = durationRaw ? Number(durationRaw) : null;
 
   await supabase
     .from("meditation_logs")
     .upsert(
-      { game_date: gameDate, duration_minutes },
+      { game_date: gameDate, duration_minutes: null },
       { onConflict: "user_id,game_date" },
     );
 
@@ -42,17 +40,6 @@ export async function logMeditation(formData: FormData) {
     gameDate,
     dedupe: true,
   });
-
-  revalidatePath("/");
-  revalidatePath("/inicio");
-}
-
-export async function undoMeditation() {
-  const { supabase, user } = await requireUser();
-  const gameDate = await getTodayGameDate(supabase, user.id);
-
-  await supabase.from("meditation_logs").delete().eq("game_date", gameDate);
-  await revokeXp(supabase, { sourceType: "meditation", gameDate });
 
   revalidatePath("/");
   revalidatePath("/inicio");
@@ -76,17 +63,6 @@ export async function logJournaling() {
     gameDate,
     dedupe: true,
   });
-
-  revalidatePath("/");
-  revalidatePath("/inicio");
-}
-
-export async function undoJournaling() {
-  const { supabase, user } = await requireUser();
-  const gameDate = await getTodayGameDate(supabase, user.id);
-
-  await supabase.from("journal_entries").delete().eq("game_date", gameDate);
-  await revokeXp(supabase, { sourceType: "journaling", gameDate });
 
   revalidatePath("/");
   revalidatePath("/inicio");

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, getWeekStart, daysBetween } from "@/lib/game-day";
 import { BackLink } from "../../back-link";
 import { saveGuideProgress } from "./actions";
-import { GuideExerciseGrid } from "./guide-exercise-grid";
+import { GuideCard } from "./guide-exercise-grid";
 
 export default async function SubjectDetailPage({
   params,
@@ -106,30 +106,13 @@ export default async function SubjectDetailPage({
         {guides && guides.length > 0 && (
           <ul className="flex flex-col gap-2">
             {guides.map((guide) => (
-              <li key={guide.id} className="card">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {guide.name}
-                    {guide.completed_at ? " ✓" : ""}
-                  </span>
-                  <span className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-                    {guide.completed_exercises}/{guide.total_exercises}
-                    <Link
-                      href={`/materias/${id}/guias/${guide.id}/editar`}
-                      className="text-accent"
-                    >
-                      editar
-                    </Link>
-                  </span>
-                </div>
-                <GuideExerciseGrid
-                  guideId={guide.id}
-                  subjectId={id}
-                  totalExercises={guide.total_exercises}
-                  completedExercises={guide.completed_exercises}
-                  action={saveGuideProgress}
-                />
-              </li>
+              <GuideCard
+                key={guide.id}
+                guide={guide}
+                subjectId={id}
+                editHref={`/materias/${id}/guias/${guide.id}/editar`}
+                action={saveGuideProgress}
+              />
             ))}
           </ul>
         )}
