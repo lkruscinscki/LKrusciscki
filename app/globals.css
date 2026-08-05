@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --accent: #ea580c;
+  --accent: #dc2626;
   --card-border: rgba(0, 0, 0, 0.1);
 }
 
@@ -19,7 +19,7 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
-    --accent: #fb923c;
+    --accent: #f87171;
     --card-border: rgba(255, 255, 255, 0.1);
   }
 }
