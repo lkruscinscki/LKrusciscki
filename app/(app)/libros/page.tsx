@@ -1,28 +1,56 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "../back-link";
-import { addBook } from "../habitos/actions";
+import { addBook, updateGoal } from "../habitos/actions";
 
 export default async function LibrosPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const [{ data: activeBooks }, { data: finishedBooks }] = await Promise.all([
-    supabase
-      .from("books")
-      .select("*, reading_logs(pages_read)")
-      .eq("status", "reading")
-      .order("created_at"),
-    supabase
-      .from("books")
-      .select("*")
-      .eq("status", "finished")
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: activeBooks }, { data: finishedBooks }, { data: settings }] =
+    await Promise.all([
+      supabase
+        .from("books")
+        .select("*, reading_logs(pages_read)")
+        .eq("status", "reading")
+        .order("created_at"),
+      supabase
+        .from("books")
+        .select("*")
+        .eq("status", "finished")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("user_settings")
+        .select("reading_daily_goal_pages")
+        .eq("user_id", user!.id)
+        .single(),
+    ]);
 
   return (
     <div className="flex flex-col gap-6 p-4">
       <BackLink href="/habitos" />
       <h1 className="text-2xl font-semibold">Libros</h1>
+
+      <section className="card">
+        <h2 className="mb-2 font-medium">Objetivo diario</h2>
+        <form action={updateGoal} className="flex gap-2">
+          <input type="hidden" name="habit" value="lectura" />
+          <input type="hidden" name="redirect_to" value="/libros" />
+          <input
+            type="number"
+            name="value"
+            defaultValue={settings?.reading_daily_goal_pages ?? 10}
+            min={1}
+            required
+            className="input flex-1"
+          />
+          <button type="submit" className="btn-secondary">
+            Guardar
+          </button>
+        </form>
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="font-medium">Leyendo</h2>
@@ -52,9 +80,11 @@ export default async function LibrosPage() {
         )}
       </section>
 
-      <section className="card">
-        <h2 className="mb-2 font-medium">Agregar libro</h2>
-        <form action={addBook} className="flex flex-col gap-2">
+      <details className="card">
+        <summary className="cursor-pointer font-medium">
+          Agregar libros
+        </summary>
+        <form action={addBook} className="mt-3 flex flex-col gap-2">
           <input name="title" placeholder="Título" required className="input" />
           <input
             type="number"
@@ -84,7 +114,7 @@ export default async function LibrosPage() {
             Agregar
           </button>
         </form>
-      </section>
+      </details>
 
       {finishedBooks && finishedBooks.length > 0 && (
         <section className="flex flex-col gap-2">

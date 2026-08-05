@@ -4,14 +4,17 @@ import { useState } from "react";
 
 export function BookCard({
   book,
-  todayPages,
   action,
 }: {
   book: { id: string; title: string; totalPages: number; cumulative: number };
-  todayPages: number;
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  async function handleSave(formData: FormData) {
+    await action(formData);
+    setExpanded(false);
+  }
 
   return (
     <li className="card">
@@ -27,22 +30,18 @@ export function BookCard({
       </button>
 
       {expanded && (
-        <form action={action} className="mt-3 flex gap-2">
+        <form action={handleSave} className="mt-3 flex gap-2">
           <input type="hidden" name="book_id" value={book.id} />
           <input
             type="number"
-            name="pages_today"
-            defaultValue={todayPages || ""}
-            placeholder="¿Cuántas páginas leíste hoy?"
+            name="up_to_page"
+            defaultValue={book.cumulative || ""}
+            placeholder="¿Hasta qué página llegaste?"
             min={1}
             required
             className="input flex-1"
           />
-          <button
-            type="submit"
-            className="btn-primary"
-            onClick={() => setExpanded(false)}
-          >
+          <button type="submit" className="btn-primary">
             Guardar
           </button>
         </form>

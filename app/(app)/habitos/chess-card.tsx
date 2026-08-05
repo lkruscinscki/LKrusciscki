@@ -10,9 +10,14 @@ export function ChessCard({
 }: {
   weeklyMinutes: number;
   goalMinutes: number;
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  async function handleSave(formData: FormData) {
+    await action(formData);
+    setExpanded(false);
+  }
 
   return (
     <div>
@@ -29,7 +34,7 @@ export function ChessCard({
 
       {expanded && (
         <div className="mt-3 flex flex-col gap-3">
-          <form action={action} className="flex gap-2">
+          <form action={handleSave} className="flex gap-2">
             <input
               type="number"
               name="duration_minutes"
@@ -38,11 +43,7 @@ export function ChessCard({
               required
               className="input flex-1"
             />
-            <button
-              type="submit"
-              className="btn-primary"
-              onClick={() => setExpanded(false)}
-            >
+            <button type="submit" className="btn-primary">
               Guardar
             </button>
           </form>

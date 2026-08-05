@@ -18,7 +18,7 @@ export function GuideCard({
   };
   subjectId: string;
   editHref: string;
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [done, setDone] = useState<boolean[]>(() =>
@@ -29,6 +29,11 @@ export function GuideCard({
   );
 
   const completedCount = done.filter(Boolean).length;
+
+  async function handleSave(formData: FormData) {
+    await action(formData);
+    setExpanded(false);
+  }
 
   return (
     <li className="card">
@@ -52,7 +57,7 @@ export function GuideCard({
       </div>
 
       {expanded && (
-        <form action={action} className="mt-3 flex flex-col gap-3">
+        <form action={handleSave} className="mt-3 flex flex-col gap-3">
           <input type="hidden" name="guide_id" value={guide.id} />
           <input type="hidden" name="subject_id" value={subjectId} />
           <input
@@ -80,11 +85,7 @@ export function GuideCard({
             ))}
           </div>
 
-          <button
-            type="submit"
-            className="btn-primary self-end"
-            onClick={() => setExpanded(false)}
-          >
+          <button type="submit" className="btn-primary self-end">
             Guardar
           </button>
         </form>

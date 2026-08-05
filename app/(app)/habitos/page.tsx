@@ -101,7 +101,7 @@ export default async function HabitosPage() {
     supabase
       .from("user_settings")
       .select(
-        "stretching_weekly_goal_minutes, creative_block_weekly_goal_minutes, chess_weekly_goal_minutes, sleep_daily_goal_hours, water_daily_goal_liters",
+        "stretching_weekly_goal_minutes, creative_block_weekly_goal_minutes, chess_weekly_goal_minutes, sleep_daily_goal_hours, water_daily_goal_liters, reading_daily_goal_pages",
       )
       .eq("user_id", user!.id)
       .single(),
@@ -128,6 +128,12 @@ export default async function HabitosPage() {
   const chessGoal = settings?.chess_weekly_goal_minutes ?? 60;
   const sleepGoal = settings?.sleep_daily_goal_hours ?? 8;
   const waterGoal = settings?.water_daily_goal_liters ?? 3;
+  const readingGoal = settings?.reading_daily_goal_pages ?? 10;
+
+  const pagesReadToday = (booksReading ?? []).reduce((sum, book) => {
+    const todayLog = book.reading_logs.find((log) => log.game_date === today);
+    return sum + (todayLog?.pages_read ?? 0);
+  }, 0);
 
   const meditationStreak = computeStreak(
     new Set((meditationStreakRows ?? []).map((r) => r.game_date)),
@@ -217,6 +223,9 @@ export default async function HabitosPage() {
         <h2 className="mb-2 flex items-center justify-between font-medium">
           Lectura <StreakBadge days={readingStreak} />
         </h2>
+        <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+          {pagesReadToday}/{readingGoal} páginas leídas hoy
+        </p>
 
         {booksReading && booksReading.length > 0 ? (
           <ul className="mb-3 flex flex-col gap-2">
@@ -224,9 +233,6 @@ export default async function HabitosPage() {
               const cumulative =
                 book.starting_pages +
                 book.reading_logs.reduce((sum, log) => sum + log.pages_read, 0);
-              const todayLog = book.reading_logs.find(
-                (log) => log.game_date === today,
-              );
               return (
                 <BookCard
                   key={book.id}
@@ -236,7 +242,6 @@ export default async function HabitosPage() {
                     totalPages: book.total_pages,
                     cumulative,
                   }}
-                  todayPages={todayLog?.pages_read ?? 0}
                   action={saveReadingLog}
                 />
               );

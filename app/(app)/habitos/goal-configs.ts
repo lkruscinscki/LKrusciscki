@@ -44,4 +44,10 @@ export const GOAL_CONFIGS: Record<
     step: 0.25,
     defaultValue: 3,
   },
+  lectura: {
+    label: "lectura",
+    column: "reading_daily_goal_pages",
+    unit: "Páginas por día",
+    defaultValue: 10,
+  },
 };

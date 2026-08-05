@@ -125,35 +125,45 @@ export async function deleteBook(formData: FormData) {
 export async function saveReadingLog(formData: FormData) {
   const { supabase, user } = await requireUser();
   const gameDate = await getTodayGameDate(supabase, user.id);
-  const pagesRaw = formData.get("pages_today");
-  const pages_today = pagesRaw ? Number(pagesRaw) : 0;
+  const upToPageRaw = formData.get("up_to_page");
+  const up_to_page = upToPageRaw ? Number(upToPageRaw) : 0;
   const book_id = formData.get("book_id") as string;
 
-  if (!book_id || !pages_today || pages_today <= 0) return;
+  if (!book_id || !up_to_page || up_to_page <= 0) return;
+
+  const { data: book } = await supabase
+    .from("books")
+    .select("starting_pages, total_pages, reading_logs(pages_read, game_date)")
+    .eq("id", book_id)
+    .single();
+
+  if (!book) return;
+
+  // "Hasta qué página llegaste" is an absolute page number; convert it to
+  // today's delta by subtracting everything already read on other days.
+  const priorPages =
+    book.starting_pages +
+    book.reading_logs
+      .filter((log) => log.game_date !== gameDate)
+      .reduce((sum, log) => sum + log.pages_read, 0);
+
+  const cappedUpToPage = Math.min(up_to_page, book.total_pages);
+  const pagesToday = cappedUpToPage - priorPages;
+
+  if (pagesToday <= 0) return;
 
   await supabase
     .from("reading_logs")
     .upsert(
-      { game_date: gameDate, pages_read: pages_today, book_id },
+      { game_date: gameDate, pages_read: pagesToday, book_id },
       { onConflict: "user_id,game_date,book_id" },
     );
 
-  const { data: book } = await supabase
-    .from("books")
-    .select("starting_pages, total_pages, reading_logs(pages_read)")
-    .eq("id", book_id)
-    .single();
-
-  if (book) {
-    const totalRead =
-      book.starting_pages +
-      book.reading_logs.reduce((sum, log) => sum + log.pages_read, 0);
-    if (totalRead >= book.total_pages) {
-      await supabase
-        .from("books")
-        .update({ status: "finished" })
-        .eq("id", book_id);
-    }
+  if (priorPages + pagesToday >= book.total_pages) {
+    await supabase
+      .from("books")
+      .update({ status: "finished" })
+      .eq("id", book_id);
   }
 
   const { data: todayLogs } = await supabase
@@ -180,6 +190,7 @@ export async function saveReadingLog(formData: FormData) {
 
   revalidatePath("/habitos");
   revalidatePath("/");
+  revalidatePath("/libros");
 }
 
 export async function saveCreativeBlock(formData: FormData) {
@@ -377,6 +388,7 @@ export async function updateGoal(formData: FormData) {
   const habit = formData.get("habit") as string;
   const valueRaw = formData.get("value");
   const value = valueRaw ? Number(valueRaw) : 0;
+  const redirectTo = (formData.get("redirect_to") as string) || "/habitos";
 
   const config = GOAL_CONFIGS[habit];
   if (!config || value <= 0) return;
@@ -387,5 +399,6 @@ export async function updateGoal(formData: FormData) {
     .eq("user_id", user.id);
 
   revalidatePath("/habitos");
-  redirect("/habitos");
+  revalidatePath("/libros");
+  redirect(redirectTo);
 }

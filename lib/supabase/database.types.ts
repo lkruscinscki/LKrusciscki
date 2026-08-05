@@ -851,6 +851,7 @@ export type Database = {
           created_at: string
           creative_block_weekly_goal_minutes: number
           day_cutoff_hour: number
+          reading_daily_goal_pages: number
           sleep_daily_goal_hours: number
           stretching_weekly_goal_minutes: number
           user_id: string
@@ -861,6 +862,7 @@ export type Database = {
           created_at?: string
           creative_block_weekly_goal_minutes?: number
           day_cutoff_hour?: number
+          reading_daily_goal_pages?: number
           sleep_daily_goal_hours?: number
           stretching_weekly_goal_minutes?: number
           user_id: string
@@ -871,6 +873,7 @@ export type Database = {
           created_at?: string
           creative_block_weekly_goal_minutes?: number
           day_cutoff_hour?: number
+          reading_daily_goal_pages?: number
           sleep_daily_goal_hours?: number
           stretching_weekly_goal_minutes?: number
           user_id?: string
