@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate } from "@/lib/game-day";
 import { grantXp, revokeXp } from "@/lib/xp";
 import { XP } from "@/lib/game-config";
+import type { Database } from "@/lib/supabase/database.types";
+import { GOAL_CONFIGS } from "./goal-configs";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -209,32 +211,29 @@ export async function saveCreativeBlock(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function logChess() {
+export async function logChess(formData: FormData) {
   const { supabase, user } = await requireUser();
   const gameDate = await getTodayGameDate(supabase, user.id);
+  const durationRaw = formData.get("duration_minutes");
+  const duration_minutes = durationRaw ? Number(durationRaw) : 0;
 
-  await supabase
+  if (duration_minutes <= 0) return;
+
+  const { data: log } = await supabase
     .from("chess_sessions")
-    .upsert({ game_date: gameDate }, { onConflict: "user_id,game_date" });
+    .insert({ date: gameDate, duration_minutes })
+    .select("id")
+    .single();
 
-  await grantXp(supabase, {
-    pillar: "personal",
-    sourceType: "chess",
-    baseXp: XP.personal.chess,
-    gameDate,
-    dedupe: true,
-  });
-
-  revalidatePath("/habitos");
-  revalidatePath("/");
-}
-
-export async function undoChess() {
-  const { supabase, user } = await requireUser();
-  const gameDate = await getTodayGameDate(supabase, user.id);
-
-  await supabase.from("chess_sessions").delete().eq("game_date", gameDate);
-  await revokeXp(supabase, { sourceType: "chess", gameDate });
+  if (log) {
+    await grantXp(supabase, {
+      pillar: "personal",
+      sourceType: "chess",
+      sourceId: log.id,
+      baseXp: XP.personal.chess,
+      gameDate,
+    });
+  }
 
   revalidatePath("/habitos");
   revalidatePath("/");
@@ -297,10 +296,21 @@ export async function saveSleep(formData: FormData) {
     .upsert({ game_date: gameDate, hours }, { onConflict: "user_id,game_date" });
 
   if (hours > 0) {
+    const { data: settings } = await supabase
+      .from("user_settings")
+      .select("sleep_daily_goal_hours")
+      .eq("user_id", user.id)
+      .single();
+
+    const goal = settings?.sleep_daily_goal_hours ?? 8;
+    const extraHours = Math.max(0, hours - goal);
+    const bonus = Math.round(extraHours * XP.personal.sleepBonusPerExtraHour);
+    const baseXp = Math.min(XP.personal.sleepBase + bonus, XP.personal.sleepCap);
+
     await grantXp(supabase, {
       pillar: "personal",
       sourceType: "sleep",
-      baseXp: XP.personal.sleep,
+      baseXp,
       gameDate,
       dedupe: true,
     });
@@ -360,16 +370,20 @@ export async function logStretching(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function updateStretchingGoal(formData: FormData) {
-  const { supabase, user } = await requireUser();
-  const goalRaw = formData.get("goal_minutes");
-  const goal_minutes = goalRaw ? Number(goalRaw) : 0;
+type UserSettingsUpdate = Database["public"]["Tables"]["user_settings"]["Update"];
 
-  if (goal_minutes <= 0) return;
+export async function updateGoal(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const habit = formData.get("habit") as string;
+  const valueRaw = formData.get("value");
+  const value = valueRaw ? Number(valueRaw) : 0;
+
+  const config = GOAL_CONFIGS[habit];
+  if (!config || value <= 0) return;
 
   await supabase
     .from("user_settings")
-    .update({ stretching_weekly_goal_minutes: goal_minutes })
+    .update({ [config.column]: value } as UserSettingsUpdate)
     .eq("user_id", user.id);
 
   revalidatePath("/habitos");

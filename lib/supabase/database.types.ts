@@ -75,19 +75,22 @@ export type Database = {
       chess_sessions: {
         Row: {
           created_at: string
-          game_date: string
+          date: string
+          duration_minutes: number
           id: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          game_date: string
+          date: string
+          duration_minutes: number
           id?: string
           user_id?: string
         }
         Update: {
           created_at?: string
-          game_date?: string
+          date?: string
+          duration_minutes?: number
           id?: string
           user_id?: string
         }
@@ -844,22 +847,34 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          chess_weekly_goal_minutes: number
           created_at: string
+          creative_block_weekly_goal_minutes: number
           day_cutoff_hour: number
+          sleep_daily_goal_hours: number
           stretching_weekly_goal_minutes: number
           user_id: string
+          water_daily_goal_liters: number
         }
         Insert: {
+          chess_weekly_goal_minutes?: number
           created_at?: string
+          creative_block_weekly_goal_minutes?: number
           day_cutoff_hour?: number
+          sleep_daily_goal_hours?: number
           stretching_weekly_goal_minutes?: number
           user_id: string
+          water_daily_goal_liters?: number
         }
         Update: {
+          chess_weekly_goal_minutes?: number
           created_at?: string
+          creative_block_weekly_goal_minutes?: number
           day_cutoff_hour?: number
+          sleep_daily_goal_hours?: number
           stretching_weekly_goal_minutes?: number
           user_id?: string
+          water_daily_goal_liters?: number
         }
         Relationships: []
       }

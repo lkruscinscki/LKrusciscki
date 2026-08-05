@@ -35,14 +35,17 @@ export const XP = {
     creativeBlockMinMinutes: 30,
     creativeBlock: 25,
     chess: 10,
-    sleep: 10,
     stretching: 10,
     supplements: 10,
+    // Sleep: base for logging anything, plus a bonus for every hour past
+    // the daily goal (fetched from user_settings), capped like reading.
+    sleepBase: 10,
+    sleepBonusPerExtraHour: 2,
+    sleepCap: 20,
   },
 } as const;
 
 export const WEEKLY_GOALS = {
-  creativeBlockMinutes: 120,
   crossTrainingSessions: 2,
   studyExercisesPerSubject: 10,
 } as const;

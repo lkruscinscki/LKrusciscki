@@ -79,9 +79,9 @@ export default async function InicioPage() {
       .lte("game_date", monthEnd),
     supabase
       .from("chess_sessions")
-      .select("game_date")
-      .gte("game_date", monthStart)
-      .lte("game_date", monthEnd),
+      .select("date")
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
     supabase
       .from("sleep_logs")
       .select("hours")
@@ -123,7 +123,7 @@ export default async function InicioPage() {
     ...(meditationMonth ?? []).map((r) => r.game_date),
     ...(journalMonth ?? []).map((r) => r.game_date),
     ...(readingMonth ?? []).map((r) => r.game_date),
-    ...(chessMonth ?? []).map((r) => r.game_date),
+    ...(chessMonth ?? []).map((r) => r.date),
   ]);
 
   const trainingDaysThisMonth = new Set<string>([

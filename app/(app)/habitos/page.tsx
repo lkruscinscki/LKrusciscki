@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, getWeekStart, addDays, computeStreak } from "@/lib/game-day";
-import { WEEKLY_GOALS } from "@/lib/game-config";
 import {
   logMeditation,
   logJournaling,
   saveReadingLog,
   saveCreativeBlock,
   logChess,
-  undoChess,
   incrementWater,
   decrementWater,
   saveSleep,
@@ -17,6 +15,10 @@ import {
 } from "./actions";
 import { BookCard } from "../book-card";
 import { StretchingCard } from "./stretching-card";
+import { CreativeBlockCard } from "./creative-block-card";
+import { ChessCard } from "./chess-card";
+import { SleepCard } from "./sleep-card";
+import { WaterCard } from "./water-card";
 
 const STREAK_LOOKBACK_DAYS = 60;
 
@@ -44,7 +46,6 @@ export default async function HabitosPage() {
     { data: journal },
     { data: booksReading },
     { data: creativeBlocksThisWeek },
-    { data: chessToday },
     { data: chessThisWeek },
     { data: waterToday },
     { data: sleepToday },
@@ -76,13 +77,8 @@ export default async function HabitosPage() {
       .gte("date", weekStart),
     supabase
       .from("chess_sessions")
-      .select("*")
-      .eq("game_date", today)
-      .maybeSingle(),
-    supabase
-      .from("chess_sessions")
-      .select("game_date")
-      .gte("game_date", weekStart),
+      .select("duration_minutes")
+      .gte("date", weekStart),
     supabase
       .from("water_intake_logs")
       .select("*")
@@ -104,7 +100,9 @@ export default async function HabitosPage() {
       .gte("date", weekStart),
     supabase
       .from("user_settings")
-      .select("stretching_weekly_goal_minutes")
+      .select(
+        "stretching_weekly_goal_minutes, creative_block_weekly_goal_minutes, chess_weekly_goal_minutes, sleep_daily_goal_hours, water_daily_goal_liters",
+      )
       .eq("user_id", user!.id)
       .single(),
     supabase.from("meditation_logs").select("game_date").gte("game_date", streakSince),
@@ -120,7 +118,16 @@ export default async function HabitosPage() {
     (sum, s) => sum + s.duration_minutes,
     0,
   );
+  const chessMinutes = (chessThisWeek ?? []).reduce(
+    (sum, s) => sum + s.duration_minutes,
+    0,
+  );
+
   const stretchingGoal = settings?.stretching_weekly_goal_minutes ?? 20;
+  const creativeGoal = settings?.creative_block_weekly_goal_minutes ?? 120;
+  const chessGoal = settings?.chess_weekly_goal_minutes ?? 60;
+  const sleepGoal = settings?.sleep_daily_goal_hours ?? 8;
+  const waterGoal = settings?.water_daily_goal_liters ?? 3;
 
   const meditationStreak = computeStreak(
     new Set((meditationStreakRows ?? []).map((r) => r.game_date)),
@@ -247,51 +254,19 @@ export default async function HabitosPage() {
       </section>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">
-          Bloque creativo · {creativeMinutes}/
-          {WEEKLY_GOALS.creativeBlockMinutes} min esta semana
-        </h2>
-        <form action={saveCreativeBlock} className="flex gap-2">
-          <input
-            name="activity"
-            placeholder="Actividad (ej. guitarra)"
-            required
-            className="input flex-1"
-          />
-          <input
-            type="number"
-            name="duration_minutes"
-            placeholder="Minutos"
-            min={1}
-            required
-            className="input w-24"
-          />
-          <button type="submit" className="btn-primary">
-            Registrar
-          </button>
-        </form>
+        <CreativeBlockCard
+          weeklyMinutes={creativeMinutes}
+          goalMinutes={creativeGoal}
+          action={saveCreativeBlock}
+        />
       </section>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">
-          Ajedrez · {chessThisWeek?.length ?? 0} esta semana
-        </h2>
-        {chessToday ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-accent">✓ Jugado hoy</p>
-            <form action={undoChess}>
-              <button type="submit" className="text-sm text-zinc-400 underline">
-                deshacer
-              </button>
-            </form>
-          </div>
-        ) : (
-          <form action={logChess}>
-            <button type="submit" className="btn-primary w-full">
-              Jugué ajedrez hoy
-            </button>
-          </form>
-        )}
+        <ChessCard
+          weeklyMinutes={chessMinutes}
+          goalMinutes={chessGoal}
+          action={logChess}
+        />
       </section>
 
       <section className="card">
@@ -303,57 +278,20 @@ export default async function HabitosPage() {
       </section>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">Agua</h2>
-        <div className="flex items-center justify-between gap-3">
-          <form action={decrementWater}>
-            <button
-              type="submit"
-              className="btn-secondary h-11 w-11 !p-0 text-lg"
-            >
-              −
-            </button>
-          </form>
-          <div className="text-center">
-            <span className="text-2xl font-semibold">
-              {waterToday?.bottles_count ?? 0}
-            </span>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              botellas (750ml) ·{" "}
-              {(((waterToday?.bottles_count ?? 0) * 750) / 1000).toFixed(2)} L
-            </p>
-          </div>
-          <form action={incrementWater}>
-            <button
-              type="submit"
-              className="btn-primary h-11 w-11 !p-0 text-lg"
-            >
-              +
-            </button>
-          </form>
-        </div>
+        <WaterCard
+          bottlesToday={waterToday?.bottles_count ?? 0}
+          goalLiters={waterGoal}
+          incrementAction={incrementWater}
+          decrementAction={decrementWater}
+        />
       </section>
 
       <section className="card">
-        <h2 className="mb-2 font-medium">Sueño</h2>
-        <form action={saveSleep} className="flex gap-2">
-          <input
-            type="number"
-            name="hours"
-            step={0.5}
-            min={0}
-            max={24}
-            defaultValue={sleepToday?.hours ?? ""}
-            placeholder="Horas dormidas"
-            required
-            className="input flex-1"
-          />
-          <button type="submit" className="btn-primary">
-            {sleepToday ? "Actualizar" : "Guardar"}
-          </button>
-        </form>
-        <p className="mt-2 text-xs text-zinc-400">
-          Carga manual por ahora — más adelante lo conectamos con tu wearable.
-        </p>
+        <SleepCard
+          hoursToday={sleepToday?.hours ?? 0}
+          goalHours={sleepGoal}
+          action={saveSleep}
+        />
       </section>
     </div>
   );
