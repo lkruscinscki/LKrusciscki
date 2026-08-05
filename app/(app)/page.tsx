@@ -1,10 +1,10 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate, getWeekStart, addDays, computeStreak } from "@/lib/game-day";
 import { WEEKLY_GOALS } from "@/lib/game-config";
 import {
   logMeditation,
   logJournaling,
-  addBook,
   saveReadingLog,
   saveCreativeBlock,
   logChess,
@@ -13,6 +13,7 @@ import {
   decrementWater,
   saveSleep,
 } from "./actions";
+import { BookCard } from "./book-card";
 
 const STREAK_LOOKBACK_DAYS = 60;
 
@@ -39,7 +40,6 @@ export default async function HabitosPage() {
     { data: meditation },
     { data: journal },
     { data: booksReading },
-    { data: todayReadingLog },
     { data: creativeBlocksThisWeek },
     { data: chessToday },
     { data: chessThisWeek },
@@ -61,14 +61,9 @@ export default async function HabitosPage() {
       .maybeSingle(),
     supabase
       .from("books")
-      .select("*, reading_logs(pages_read)")
+      .select("*, reading_logs(pages_read, game_date)")
       .eq("status", "reading")
       .order("created_at"),
-    supabase
-      .from("reading_logs")
-      .select("*")
-      .eq("game_date", today)
-      .maybeSingle(),
     supabase
       .from("creative_blocks")
       .select("duration_minutes")
@@ -169,22 +164,26 @@ export default async function HabitosPage() {
         </h2>
 
         {booksReading && booksReading.length > 0 ? (
-          <ul className="mb-3 flex flex-col gap-1">
+          <ul className="mb-3 flex flex-col gap-2">
             {booksReading.map((book) => {
-              const pagesRead = book.reading_logs.reduce(
-                (sum, log) => sum + log.pages_read,
-                0,
+              const cumulative =
+                book.starting_pages +
+                book.reading_logs.reduce((sum, log) => sum + log.pages_read, 0);
+              const todayLog = book.reading_logs.find(
+                (log) => log.game_date === today,
               );
               return (
-                <li
+                <BookCard
                   key={book.id}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span>{book.title}</span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    {pagesRead}/{book.total_pages} pág.
-                  </span>
-                </li>
+                  book={{
+                    id: book.id,
+                    title: book.title,
+                    totalPages: book.total_pages,
+                    cumulative,
+                  }}
+                  todayPages={todayLog?.pages_read ?? 0}
+                  action={saveReadingLog}
+                />
               );
             })}
           </ul>
@@ -194,65 +193,9 @@ export default async function HabitosPage() {
           </p>
         )}
 
-        {booksReading && booksReading.length > 0 && (
-          <form
-            action={saveReadingLog}
-            className="mb-4 flex flex-col gap-2 border-t border-black/10 pt-3 dark:border-white/10"
-          >
-            <select
-              name="book_id"
-              defaultValue={todayReadingLog?.book_id ?? ""}
-              required
-              className="input"
-            >
-              <option value="" disabled>
-                Elegí un libro
-              </option>
-              {booksReading.map((book) => (
-                <option key={book.id} value={book.id}>
-                  {book.title}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                name="pages_read"
-                defaultValue={todayReadingLog?.pages_read ?? ""}
-                placeholder="Páginas leídas hoy"
-                min={1}
-                required
-                className="input flex-1"
-              />
-              <button type="submit" className="btn-primary">
-                {todayReadingLog ? "Actualizar" : "Guardar"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        <form
-          action={addBook}
-          className="flex gap-2 border-t border-black/10 pt-3 text-sm dark:border-white/10"
-        >
-          <input
-            name="title"
-            placeholder="Nuevo libro (ej. El Principito)"
-            required
-            className="input flex-1"
-          />
-          <input
-            type="number"
-            name="total_pages"
-            placeholder="Páginas"
-            min={1}
-            required
-            className="input w-24"
-          />
-          <button type="submit" className="btn-secondary">
-            +
-          </button>
-        </form>
+        <Link href="/libros" className="btn-secondary block text-center">
+          Agregar o editar libros
+        </Link>
       </section>
 
       <section className="card">

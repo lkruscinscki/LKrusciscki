@@ -44,6 +44,7 @@ export type Database = {
           author: string | null
           created_at: string
           id: string
+          starting_pages: number
           status: Database["public"]["Enums"]["book_status"]
           title: string
           total_pages: number
@@ -53,6 +54,7 @@ export type Database = {
           author?: string | null
           created_at?: string
           id?: string
+          starting_pages?: number
           status?: Database["public"]["Enums"]["book_status"]
           title: string
           total_pages: number
@@ -62,6 +64,7 @@ export type Database = {
           author?: string | null
           created_at?: string
           id?: string
+          starting_pages?: number
           status?: Database["public"]["Enums"]["book_status"]
           title?: string
           total_pages?: number

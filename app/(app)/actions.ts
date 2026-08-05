@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayGameDate } from "@/lib/game-day";
 import { grantXp, revokeXp } from "@/lib/xp";
@@ -73,41 +74,78 @@ export async function addBook(formData: FormData) {
   const title = ((formData.get("title") as string) ?? "").trim();
   const totalPagesRaw = formData.get("total_pages");
   const total_pages = totalPagesRaw ? Number(totalPagesRaw) : 0;
+  const alreadyStarted = formData.get("already_started") === "on";
+  const currentPageRaw = formData.get("current_page");
+  const starting_pages = alreadyStarted
+    ? Math.min(Math.max(Number(currentPageRaw) || 0, 0), total_pages)
+    : 0;
 
   if (!title || total_pages <= 0) return;
 
-  await supabase.from("books").insert({ title, total_pages });
+  await supabase.from("books").insert({ title, total_pages, starting_pages });
 
   revalidatePath("/");
+  revalidatePath("/libros");
+}
+
+export async function updateBook(formData: FormData) {
+  const { supabase } = await requireUser();
+  const book_id = formData.get("book_id") as string;
+  const title = ((formData.get("title") as string) ?? "").trim();
+  const totalRaw = formData.get("total_pages");
+  const total_pages = totalRaw ? Number(totalRaw) : 0;
+  const finished = formData.get("finished") === "on";
+
+  if (!book_id || !title || total_pages <= 0) return;
+
+  await supabase
+    .from("books")
+    .update({ title, total_pages, status: finished ? "finished" : "reading" })
+    .eq("id", book_id);
+
+  revalidatePath("/");
+  revalidatePath("/libros");
+  redirect("/libros");
+}
+
+export async function deleteBook(formData: FormData) {
+  const { supabase } = await requireUser();
+  const book_id = formData.get("book_id") as string;
+  if (!book_id) return;
+
+  await supabase.from("books").delete().eq("id", book_id);
+
+  revalidatePath("/");
+  revalidatePath("/libros");
+  redirect("/libros");
 }
 
 export async function saveReadingLog(formData: FormData) {
   const { supabase, user } = await requireUser();
   const gameDate = await getTodayGameDate(supabase, user.id);
-  const pagesRaw = formData.get("pages_read");
-  const pages_read = pagesRaw ? Number(pagesRaw) : 0;
+  const pagesRaw = formData.get("pages_today");
+  const pages_today = pagesRaw ? Number(pagesRaw) : 0;
   const book_id = formData.get("book_id") as string;
 
-  if (!book_id || !pages_read || pages_read <= 0) return;
+  if (!book_id || !pages_today || pages_today <= 0) return;
 
   await supabase
     .from("reading_logs")
     .upsert(
-      { game_date: gameDate, pages_read, book_id },
-      { onConflict: "user_id,game_date" },
+      { game_date: gameDate, pages_read: pages_today, book_id },
+      { onConflict: "user_id,game_date,book_id" },
     );
 
   const { data: book } = await supabase
     .from("books")
-    .select("total_pages, reading_logs(pages_read)")
+    .select("starting_pages, total_pages, reading_logs(pages_read)")
     .eq("id", book_id)
     .single();
 
   if (book) {
-    const totalRead = book.reading_logs.reduce(
-      (sum, log) => sum + log.pages_read,
-      0,
-    );
+    const totalRead =
+      book.starting_pages +
+      book.reading_logs.reduce((sum, log) => sum + log.pages_read, 0);
     if (totalRead >= book.total_pages) {
       await supabase
         .from("books")
@@ -116,7 +154,16 @@ export async function saveReadingLog(formData: FormData) {
     }
   }
 
-  const readingXp = computeReadingXp(pages_read);
+  const { data: todayLogs } = await supabase
+    .from("reading_logs")
+    .select("pages_read")
+    .eq("game_date", gameDate);
+  const todayTotalPages = (todayLogs ?? []).reduce(
+    (sum, l) => sum + l.pages_read,
+    0,
+  );
+
+  const readingXp = computeReadingXp(todayTotalPages);
   if (readingXp > 0) {
     await grantXp(supabase, {
       pillar: "personal",
