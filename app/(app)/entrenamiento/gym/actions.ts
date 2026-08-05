@@ -73,6 +73,46 @@ export async function addSet(formData: FormData) {
   revalidatePath("/entrenamiento/gym/hoy");
 }
 
+export async function updateSet(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const setId = formData.get("set_id") as string;
+  const reps = Number(formData.get("reps"));
+  const weightKg = Number(formData.get("weight_kg"));
+  const revalidatePathValue =
+    (formData.get("revalidate_path") as string) || "/entrenamiento/gym/hoy";
+
+  if (!setId || !reps || Number.isNaN(weightKg)) return;
+
+  await supabase
+    .from("gym_workout_sets")
+    .update({ reps, weight_kg: weightKg })
+    .eq("id", setId);
+
+  revalidatePath(revalidatePathValue);
+}
+
+export async function deleteSet(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const setId = formData.get("set_id") as string;
+  const revalidatePathValue =
+    (formData.get("revalidate_path") as string) || "/entrenamiento/gym/hoy";
+  if (!setId) return;
+
+  await supabase.from("gym_workout_sets").delete().eq("id", setId);
+
+  revalidatePath(revalidatePathValue);
+}
+
 export async function finalizeWorkout(formData: FormData) {
   const supabase = await createClient();
   const {

@@ -50,6 +50,19 @@ export default async function GymHubPage() {
           </p>
         </div>
       </Link>
+
+      <Link
+        href="/entrenamiento/gym/historial"
+        className="card flex items-center gap-3"
+      >
+        <span className="text-2xl">🗓️</span>
+        <div>
+          <p className="font-medium">Historial</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Ver entrenamientos pasados
+          </p>
+        </div>
+      </Link>
     </div>
   );
 }
