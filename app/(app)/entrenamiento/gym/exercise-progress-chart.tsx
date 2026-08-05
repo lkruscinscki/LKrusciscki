@@ -1,19 +1,19 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-export function ReadingTrendChart({
+export function ExerciseProgressChart({
   data,
 }: {
-  data: { weekLabel: string; pages: number }[];
+  data: { dateLabel: string; weightKg: number }[];
 }) {
   return (
-    <div className="h-56 w-full">
+    <div className="h-40 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: -20 }}>
+        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: -20 }}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
           <XAxis
-            dataKey="weekLabel"
+            dataKey="dateLabel"
             tick={{ fill: "var(--chart-muted)", fontSize: 10 }}
             axisLine={{ stroke: "var(--chart-axis)" }}
             tickLine={false}
@@ -23,7 +23,6 @@ export function ReadingTrendChart({
             axisLine={false}
             tickLine={false}
             width={32}
-            allowDecimals={false}
           />
           <Tooltip
             cursor={{ stroke: "var(--chart-axis)" }}
@@ -35,14 +34,12 @@ export function ReadingTrendChart({
             }}
             labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
           />
-          <Area
+          <Line
             type="monotone"
-            dataKey="pages"
-            name="Páginas"
+            dataKey="weightKg"
+            name="Kg"
             stroke="var(--chart-trend-line)"
             strokeWidth={2}
-            fill="var(--chart-trend-line)"
-            fillOpacity={0.1}
             dot={{
               r: 4,
               fill: "var(--chart-trend-line)",
@@ -51,7 +48,7 @@ export function ReadingTrendChart({
             }}
             activeDot={{ r: 5 }}
           />
-        </AreaChart>
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );

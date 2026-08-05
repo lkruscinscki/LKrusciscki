@@ -4,7 +4,6 @@ import { getTodayGameDate } from "@/lib/game-day";
 import { addCrossTrainingSession } from "./actions";
 
 const DISCIPLINES: Record<string, string> = {
-  gym: "Gym",
   escalada: "Escalada",
   running: "Running",
 };

@@ -232,7 +232,7 @@ export type Database = {
           created_at: string
           date: string
           discipline: string
-          duration_minutes: number
+          duration_minutes: number | null
           id: string
           notes: string | null
           user_id: string
@@ -241,7 +241,7 @@ export type Database = {
           created_at?: string
           date: string
           discipline: string
-          duration_minutes: number
+          duration_minutes?: number | null
           id?: string
           notes?: string | null
           user_id?: string
@@ -250,7 +250,7 @@ export type Database = {
           created_at?: string
           date?: string
           discipline?: string
-          duration_minutes?: number
+          duration_minutes?: number | null
           id?: string
           notes?: string | null
           user_id?: string
@@ -380,6 +380,131 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gym_exercises: {
+        Row: {
+          created_at: string
+          exercise_type: Database["public"]["Enums"]["gym_exercise_type"]
+          id: string
+          muscle_group: Database["public"]["Enums"]["gym_muscle_group"]
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_type: Database["public"]["Enums"]["gym_exercise_type"]
+          id?: string
+          muscle_group: Database["public"]["Enums"]["gym_muscle_group"]
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          exercise_type?: Database["public"]["Enums"]["gym_exercise_type"]
+          id?: string
+          muscle_group?: Database["public"]["Enums"]["gym_muscle_group"]
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gym_workout_exercises: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          user_id: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          user_id?: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          user_id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_workout_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "gym_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_workout_exercises_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "gym_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_workout_sets: {
+        Row: {
+          created_at: string
+          id: string
+          reps: number
+          user_id: string
+          weight_kg: number
+          workout_exercise_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reps: number
+          user_id?: string
+          weight_kg: number
+          workout_exercise_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reps?: number
+          user_id?: string
+          weight_kg?: number
+          workout_exercise_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_workout_sets_workout_exercise_id_fkey"
+            columns: ["workout_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "gym_workout_exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_workouts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          game_date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          game_date: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          game_date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       jiujitsu_sessions: {
         Row: {
@@ -983,6 +1108,15 @@ export type Database = {
     }
     Enums: {
       book_status: "reading" | "finished" | "abandoned"
+      gym_exercise_type: "peso_libre" | "polea" | "compuesto"
+      gym_muscle_group:
+        | "pecho"
+        | "hombros"
+        | "espalda"
+        | "biceps"
+        | "triceps"
+        | "piernas"
+        | "accesorios"
       jiujitsu_type: "gi" | "no_gi" | "open_mat"
       match_method: "submission" | "points" | "decision" | "dq" | "other"
       match_result: "win" | "loss" | "draw"
@@ -1120,6 +1254,16 @@ export const Constants = {
   public: {
     Enums: {
       book_status: ["reading", "finished", "abandoned"],
+      gym_exercise_type: ["peso_libre", "polea", "compuesto"],
+      gym_muscle_group: [
+        "pecho",
+        "hombros",
+        "espalda",
+        "biceps",
+        "triceps",
+        "piernas",
+        "accesorios",
+      ],
       jiujitsu_type: ["gi", "no_gi", "open_mat"],
       match_method: ["submission", "points", "decision", "dq", "other"],
       match_result: ["win", "loss", "draw"],
